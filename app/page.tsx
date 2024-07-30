@@ -4,13 +4,13 @@ import QRCode from 'qrcode';
 import { ToastContainer, toast } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
-import { isValidAddress, ensLookup, copyToClipboard } from './utils'; // hypothetical utility functions
+import { copyToClipboard } from './utils'; // hypothetical utility functions
 import Footer from './footer';
 
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; 
 const BASE_CHAIN_ID = 8453;
 
-export default function Home({ searchParams }) {
+export default function Home({ searchParams }: { searchParams: any }) {
   const [address, setAddress] = useState(searchParams.address || '');
   const [amount, setAmount] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -22,19 +22,21 @@ export default function Home({ searchParams }) {
   useEffect(() => {
     if (address) {
       const timeoutId = setTimeout(async () => {
-        const result = await ensLookup(address);
-        setResolvedAddress(result);
+        //const result = await ensLookup(address);
+        setResolvedAddress(address);
       }, 400);
       return () => clearTimeout(timeoutId);
     }
   }, [address]);
 
   const generateQrCode = async () => {
+    /*
     if (!isValidAddress(address) && !resolvedAddress) {
       setError('Invalid address');
       return;
     }
-    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+      */
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       setError('Invalid amount');
       return;
     }
@@ -57,7 +59,7 @@ export default function Home({ searchParams }) {
       QRCode.toCanvas(canvas, qrCodeUrl, (error) => {
         if (error) console.error(error);
       });
-      canvas.toBlob((blob) => {
+      (canvas as HTMLCanvasElement).toBlob((blob:any) => {
         const item = new ClipboardItem({ 'image/png': blob });
         navigator.clipboard.write([item]).then(() => {
           toast.success('QR Code image copied to clipboard!');
