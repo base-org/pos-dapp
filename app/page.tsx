@@ -4,7 +4,6 @@ import QRCode from 'qrcode';
 import { ToastContainer, toast } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
-import { copyToClipboard } from './utils'; // hypothetical utility functions
 import Footer from './footer';
 
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; 
@@ -73,6 +72,15 @@ export default function Home({ searchParams }: { searchParams: any }) {
     }
   };
 
+  const copyToClipboard = (text: string): void => {
+    console.log(text);
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Text copied to clipboard!');
+    }).catch((err) => {
+      console.error('Could not copy text: ', err);
+    });
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-24">
       <div className="relative flex flex-col items-center p-6 bg-white dark:bg-gray-800 shadow-md rounded-md w-full max-w-md">
@@ -83,7 +91,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
         </p>
         <input
           type="text"
-          className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-800 text-white"
+          className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
           placeholder="To Address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
@@ -92,7 +100,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
         {error && <p className="text-xs text-red-500">{error}</p>}
         <input
           type="text"
-          className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-800 text-white"
+          className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
           placeholder="Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
