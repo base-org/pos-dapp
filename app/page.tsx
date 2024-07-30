@@ -16,7 +16,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const [qrCodeData, setQrCodeData] = useState('');
   const [error, setError] = useState('');
   const [resolvedAddress, setResolvedAddress] = useState('');
-  const [tippingEnabled, setTippingEnabled] = useState(false);
+  const [tippingEnabled, setTippingEnabled] = useState(searchParams.tip1 || searchParams.tip2 || searchParams.tip3 ? true : false);
   const [tipAmounts, setTipAmounts] = useState([searchParams.tip1 || 0, searchParams.tip2 || 0, searchParams.tip3 || 0]);
   const canvasRef = useRef(null);
 
@@ -96,8 +96,28 @@ export default function Home({ searchParams }: { searchParams: any }) {
 
   const handleTipChange = (index: number, value: string) => {
     const newTipAmounts = [...tipAmounts];
-    newTipAmounts[index] = parseFloat(value);
+    newTipAmounts[index] = parseFloat(value) || 0;
     setTipAmounts(newTipAmounts);
+    setQrCodeUrl('');
+    setQrCodeData('');
+  };
+
+  const handleTippingToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTippingEnabled(e.target.checked);
+    setQrCodeUrl('');
+    setQrCodeData('');
+  };
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddress(e.target.value);
+    setQrCodeUrl('');
+    setQrCodeData('');
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAmount(e.target.value);
+    setQrCodeUrl('');
+    setQrCodeData('');
   };
 
   return (
@@ -113,7 +133,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
           placeholder="To Address"
           value={address}
-          onChange={(e) => setAddress(e.target.value)}
+          onChange={handleAddressChange}
         />
         {error && <p className="text-xs text-red-500">{error}</p>}
         <input
@@ -121,14 +141,14 @@ export default function Home({ searchParams }: { searchParams: any }) {
           className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
           placeholder="Amount"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={handleAmountChange}
         />
         <div>
           <input
             type="checkbox"
             className="mb-4 p-2"
             checked={tippingEnabled}
-            onChange={(e) => setTippingEnabled(e.target.checked)}
+            onChange={handleTippingToggle}
           />
           <label>Enable Tipping</label>
         </div>
