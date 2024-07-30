@@ -6,7 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Footer from './footer';
 
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; 
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const BASE_CHAIN_ID = 8453;
 
 export default function Home({ searchParams }: { searchParams: any }) {
@@ -16,6 +16,8 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const [qrCodeData, setQrCodeData] = useState('');
   const [error, setError] = useState('');
   const [resolvedAddress, setResolvedAddress] = useState('');
+  const [tippingEnabled, setTippingEnabled] = useState(false);
+  const [tipAmounts, setTipAmounts] = useState([searchParams.tip1 || 0, searchParams.tip2 || 0, searchParams.tip3 || 0]);
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -28,13 +30,18 @@ export default function Home({ searchParams }: { searchParams: any }) {
     }
   }, [address]);
 
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    queryParams.set('address', address);
+    queryParams.set('amount', amount);
+    queryParams.set('tip1', tipAmounts[0].toString());
+    queryParams.set('tip2', tipAmounts[1].toString());
+    queryParams.set('tip3', tipAmounts[2].toString());
+    const newUrl = `${window.location.pathname}?${queryParams.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [address, amount, tipAmounts]);
+
   const generateQrCode = async () => {
-    /*
-    if (!isValidAddress(address) && !resolvedAddress) {
-      setError('Invalid address');
-      return;
-    }
-      */
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       setError('Invalid amount');
       return;
@@ -43,8 +50,16 @@ export default function Home({ searchParams }: { searchParams: any }) {
     try {
       const eip681Uri = `ethereum:${USDC_ADDRESS}@${BASE_CHAIN_ID}/transfer?value=${amount}e18&address=${resolvedAddress || address}`;
       console.log('EIP-681 URI:', eip681Uri);
+
+      const totalAmount = tippingEnabled
+        ? parseFloat(amount) + tipAmounts.reduce((acc, tip) => acc + parseFloat(tip), 0)
+        : parseFloat(amount);
+      const paymentUrl = tippingEnabled
+        ? `${window.location.origin}/payment?address=${resolvedAddress}&amount=${totalAmount}&tip1=${tipAmounts[0]}&tip2=${tipAmounts[1]}&tip3=${tipAmounts[2]}`
+        : eip681Uri;
+
       const url = await QRCode.toDataURL(eip681Uri);
-      setQrCodeUrl(eip681Uri);
+      setQrCodeUrl(paymentUrl);
       setQrCodeData(url);
     } catch (err) {
       console.error(err);
@@ -58,7 +73,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
       QRCode.toCanvas(canvas, qrCodeUrl, (error) => {
         if (error) console.error(error);
       });
-      (canvas as HTMLCanvasElement).toBlob((blob:any) => {
+      (canvas as HTMLCanvasElement).toBlob((blob: any) => {
         const item = new ClipboardItem({ 'image/png': blob });
         navigator.clipboard.write([item]).then(() => {
           toast.success('QR Code image copied to clipboard!');
@@ -66,19 +81,23 @@ export default function Home({ searchParams }: { searchParams: any }) {
           console.error('Could not copy image: ', err);
         });
       });
-    }
-    else {
+    } else {
       console.error('Canvas element not found');
     }
   };
 
   const copyToClipboard = (text: string): void => {
-    console.log(text);
     navigator.clipboard.writeText(text).then(() => {
       toast.success('Text copied to clipboard!');
     }).catch((err) => {
       console.error('Could not copy text: ', err);
     });
+  };
+
+  const handleTipChange = (index: number, value: string) => {
+    const newTipAmounts = [...tipAmounts];
+    newTipAmounts[index] = parseFloat(value);
+    setTipAmounts(newTipAmounts);
   };
 
   return (
@@ -96,15 +115,48 @@ export default function Home({ searchParams }: { searchParams: any }) {
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
-        {false && resolvedAddress && <p className="text-xs text-gray-400">Resolved to: {resolvedAddress}</p>}
         {error && <p className="text-xs text-red-500">{error}</p>}
         <input
-          type="text"
+          type="number"
           className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
           placeholder="Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
+        <div>
+          <input
+            type="checkbox"
+            className="mb-4 p-2"
+            checked={tippingEnabled}
+            onChange={(e) => setTippingEnabled(e.target.checked)}
+          />
+          <label>Enable Tipping</label>
+        </div>
+        {tippingEnabled && (
+          <div className="mb-4 w-full">
+            <input
+              type="number"
+              className="mb-2 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
+              value={tipAmounts[0]}
+              onChange={(e) => handleTipChange(0, e.target.value)}
+              placeholder="Enter tip amount 1"
+            />
+            <input
+              type="number"
+              className="mb-2 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
+              value={tipAmounts[1]}
+              onChange={(e) => handleTipChange(1, e.target.value)}
+              placeholder="Enter tip amount 2"
+            />
+            <input
+              type="number"
+              className="mb-2 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
+              value={tipAmounts[2]}
+              onChange={(e) => handleTipChange(2, e.target.value)}
+              placeholder="Enter tip amount 3"
+            />
+          </div>
+        )}
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
           onClick={generateQrCode}
