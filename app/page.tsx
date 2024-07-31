@@ -15,7 +15,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const [error, setError] = useState('');
   const [resolvedAddress, setResolvedAddress] = useState('');
   const [tippingEnabled, setTippingEnabled] = useState(searchParams.tip1 || searchParams.tip2 || searchParams.tip3 ? true : false);
-  const [tipAmounts, setTipAmounts] = useState([searchParams.tip1 || 0, searchParams.tip2 || 0, searchParams.tip3 || 0]);
+  const [tipAmounts, setTipAmounts] = useState([searchParams.tip1 || 1, searchParams.tip2 || 2, searchParams.tip3 || 3]);
   const canvasRef = useRef(null);
 
   useEffect(() => {

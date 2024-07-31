@@ -20,8 +20,7 @@ export default function Payment() {
     const eip681Uri = GeneratePaymentLink(amount, address);
     console.log('EIP-681 URI:', eip681Uri);
 
-    // Add your payment handling logic here
-    alert(`Payment triggered! Total amount: ${formatCurrency(total)}`);
+    window.location.href = eip681Uri;
   };
 
   const handleCustomTipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
