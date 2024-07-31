@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { GeneratePaymentLink } from '../util';
 
+//users arriving on this page should already be on their target device, so we don't need to ever show a QR code here
+
 export default function Payment() {
   const searchParams = useSearchParams();
   const address = searchParams.get('address') || '';

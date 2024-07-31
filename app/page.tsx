@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, LegacyRef } from 'react';
 import QRCode from 'qrcode';
 import { ToastContainer, toast } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
 import Footer from './component/footer';
 import { GeneratePaymentLink } from './util';
+import QRCodeFooter from './component/qrCode';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const [address, setAddress] = useState(searchParams.address || '');
@@ -16,13 +17,39 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const [resolvedAddress, setResolvedAddress] = useState('');
   const [tippingEnabled, setTippingEnabled] = useState(searchParams.tip1 || searchParams.tip2 || searchParams.tip3 ? true : false);
   const [tipAmounts, setTipAmounts] = useState([searchParams.tip1 || 1, searchParams.tip2 || 2, searchParams.tip3 || 3]);
-  const canvasRef = useRef(null);
 
   useEffect(() => {
     if (address) {
       const timeoutId = setTimeout(async () => {
-        //const result = await ensLookup(address);
-        setResolvedAddress(address);
+        //const url = `https://api.wallet.coinbase.com/rpc/v2/getBasicPublicProfiles?names=${address}`;
+        const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByDomain?userDomain=${address}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('ENS -> 0x lookup:', data);
+        if (data && data.result && data.result.address) {
+          console.log('Resolved Address:', data.result.address);
+          setResolvedAddress(data.result.address);
+          const avatarUrl = data.result.subdomainProfile.profileTextRecords.avatar;
+        } else {
+          //lets see if its an address and has an ENS record
+          if(address.startsWith('0x')) {  
+            const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByAddress?queryAddress=${address}`
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data && data.result && data.result.ensDomainProfile && data.result.ensDomainProfile.name) {
+              console.log('0x -> ENS lookup:', data.result.ensDomainProfile.name);
+              setResolvedAddress(data.result.ensDomainProfile.name);
+              const avatarUrl = data.result.subdomainProfile.profileTextRecords.avatar;
+            }
+            else {
+              console.log('0x -> ENS lookup:', data.result);
+              setResolvedAddress(address);
+            }
+          }
+          else {
+            setResolvedAddress(address);
+          }
+        }
       }, 400);
       return () => clearTimeout(timeoutId);
     }
@@ -40,6 +67,11 @@ export default function Home({ searchParams }: { searchParams: any }) {
   }, [address, amount, tipAmounts]);
 
   const generateQrCode = async () => {
+    if(!resolvedAddress) {
+      setError('Invalid address');
+      return;
+    }
+
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       setError('Invalid amount');
       return;
@@ -62,25 +94,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
     } catch (err) {
       console.error(err);
       setError('Failed to generate QR code');
-    }
-  };
-
-  const copyQrCodeImage = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      QRCode.toCanvas(canvas, qrCodeUrl, (error) => {
-        if (error) console.error(error);
-      });
-      (canvas as HTMLCanvasElement).toBlob((blob: any) => {
-        const item = new ClipboardItem({ 'image/png': blob });
-        navigator.clipboard.write([item]).then(() => {
-          toast.success('QR Code image copied to clipboard!');
-        }).catch((err) => {
-          console.error('Could not copy image: ', err);
-        });
-      });
-    } else {
-      console.error('Canvas element not found');
     }
   };
 
@@ -133,6 +146,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           value={address}
           onChange={handleAddressChange}
         />
+        {resolvedAddress && resolvedAddress != address && <p className="text-xs text-gray-500 mb-4">Resolved Address: {resolvedAddress}</p>}
         {error && <p className="text-xs text-red-500">{error}</p>}
         <input
           type="number"
@@ -144,7 +158,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
         <div>
           <input
             type="checkbox"
-            className="mb-4 p-2"
+            className="mb-4 p-2 mr-2"
             checked={tippingEnabled}
             onChange={handleTippingToggle}
           />
@@ -182,25 +196,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           Generate QR Code
         </button>
         {qrCodeUrl && (
-          <div className="mt-4 text-center">
-            <h2 className="text-lg font-semibold mb-2">QR Code:</h2>
-            <img src={qrCodeData} alt="EIP-681 QR Code" className="border border-gray-300 rounded-md mb-2 mx-auto" />
-            <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
-            <div className="flex space-x-2 justify-center">
-              <button
-                className="p-2 bg-green-500 text-white rounded-md"
-                onClick={() => copyToClipboard(qrCodeUrl)}
-              >
-                Copy QR Code URL
-              </button>
-              <button
-                className="p-2 bg-green-500 text-white rounded-md"
-                onClick={copyQrCodeImage}
-              >
-                Copy QR Code Image
-              </button>
-            </div>
-          </div>
+          <QRCodeFooter qrCodeData={qrCodeData} copyToClipboard={copyToClipboard} qrCodeUrl={qrCodeUrl} />
         )}
       </div>
       <Footer />
