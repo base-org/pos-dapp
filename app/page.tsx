@@ -15,13 +15,13 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const [qrCodeData, setQrCodeData] = useState('');
   const [error, setError] = useState('');
   const [resolvedAddress, setResolvedAddress] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [tippingEnabled, setTippingEnabled] = useState(searchParams.tip1 || searchParams.tip2 || searchParams.tip3 ? true : false);
   const [tipAmounts, setTipAmounts] = useState([searchParams.tip1 || 1, searchParams.tip2 || 2, searchParams.tip3 || 3]);
 
   useEffect(() => {
     if (address) {
       const timeoutId = setTimeout(async () => {
-        //const url = `https://api.wallet.coinbase.com/rpc/v2/getBasicPublicProfiles?names=${address}`;
         const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByDomain?userDomain=${address}`;
         const response = await fetch(url);
         const data = await response.json();
@@ -29,24 +29,36 @@ export default function Home({ searchParams }: { searchParams: any }) {
         if (data && data.result && data.result.address) {
           console.log('Resolved Address:', data.result.address);
           setResolvedAddress(data.result.address);
-          const avatarUrl = data.result.subdomainProfile.profileTextRecords.avatar;
+          const { subdomainProfile, ensDomainProfile } = data.result;
+          const profileToUse = ensDomainProfile || subdomainProfile;
+          if (profileToUse && profileToUse.profileTextRecords.avatar) {
+            setAvatarUrl(profileToUse.profileTextRecords.avatar);
+          }
+          else {
+            setAvatarUrl('');
+          }
         } else {
-          //lets see if its an address and has an ENS record
-          if(address.startsWith('0x')) {  
-            const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByAddress?queryAddress=${address}`
+          if (address.startsWith('0x')) {
+            const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByAddress?queryAddress=${address}`;
             const response = await fetch(url);
             const data = await response.json();
-            if (data && data.result && data.result.ensDomainProfile && data.result.ensDomainProfile.name) {
-              console.log('0x -> ENS lookup:', data.result.ensDomainProfile.name);
-              setResolvedAddress(data.result.ensDomainProfile.name);
-              const avatarUrl = data.result.subdomainProfile.profileTextRecords.avatar;
-            }
-            else {
+            const { subdomainProfile, ensDomainProfile } = data.result;
+            const profileToUse = data.result.primaryDomainType === 'cbid' ? subdomainProfile : ensDomainProfile;
+            if (profileToUse && profileToUse.name) {
+              console.log('0x -> ENS lookup:', profileToUse.name);
+              setResolvedAddress(profileToUse.name);
+              const textRecords = profileToUse.profileTextRecords;
+              if (textRecords && textRecords.avatar) {
+                setAvatarUrl(textRecords.avatar);
+              }
+              else {
+                setAvatarUrl('');
+              }
+            } else {
               console.log('0x -> ENS lookup:', data.result);
               setResolvedAddress(address);
             }
-          }
-          else {
+          } else {
             setResolvedAddress(address);
           }
         }
@@ -67,7 +79,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
   }, [address, amount, tipAmounts]);
 
   const generateQrCode = async () => {
-    if(!resolvedAddress) {
+    if (!resolvedAddress) {
       setError('Invalid address');
       return;
     }
@@ -139,6 +151,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           Enter the recipient address and the amount to <br />generate a QR code to get paid in USDC on base.<br />
           EIP-681 QR Code Generator
         </p>
+
         <input
           type="text"
           className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
@@ -146,7 +159,14 @@ export default function Home({ searchParams }: { searchParams: any }) {
           value={address}
           onChange={handleAddressChange}
         />
-        {resolvedAddress && resolvedAddress != address && <p className="text-xs text-gray-500 mb-4">Resolved Address: {resolvedAddress}</p>}
+        {avatarUrl && (
+          <img
+            src={avatarUrl}
+            alt="Avatar"
+            className="rounded-full w-24 h-24 mb-4"
+          />
+        )}
+        {resolvedAddress && resolvedAddress !== address && <p className="text-xs text-gray-500 mb-4">Resolved Address: {resolvedAddress}</p>}
         {error && <p className="text-xs text-red-500">{error}</p>}
         <input
           type="number"
