@@ -4,10 +4,8 @@ import QRCode from 'qrcode';
 import { ToastContainer, toast } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
-import Footer from './footer';
-
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const BASE_CHAIN_ID = 8453;
+import Footer from './component/footer';
+import { GeneratePaymentLink } from './util';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const [address, setAddress] = useState(searchParams.address || '');
@@ -48,7 +46,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
     }
     setError('');
     try {
-      const eip681Uri = `ethereum:${USDC_ADDRESS}@${BASE_CHAIN_ID}/transfer?value=${amount}e18&address=${resolvedAddress || address}`;
+      const eip681Uri = GeneratePaymentLink(parseFloat(amount), resolvedAddress);
       console.log('EIP-681 URI:', eip681Uri);
 
       const totalAmount = tippingEnabled
