@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, LegacyRef } from 'react';
+import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { ToastContainer, toast } from 'react-toastify';
 
@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Footer from './component/footer';
 import { GeneratePaymentLink } from './util';
 import QRCodeFooter from './component/qrCode';
+import { useEnsResolver } from './hooks/useEnsResolver';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const [address, setAddress] = useState(searchParams.address || '');
@@ -14,58 +15,10 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState('');
   const [error, setError] = useState('');
-  const [resolvedAddress, setResolvedAddress] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
   const [tippingEnabled, setTippingEnabled] = useState(searchParams.tip1 || searchParams.tip2 || searchParams.tip3 ? true : false);
   const [tipAmounts, setTipAmounts] = useState([searchParams.tip1 || 1, searchParams.tip2 || 2, searchParams.tip3 || 3]);
 
-  useEffect(() => {
-    if (address) {
-      const timeoutId = setTimeout(async () => {
-        const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByDomain?userDomain=${address}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        console.log('ENS -> 0x lookup:', data);
-        if (data && data.result && data.result.address) {
-          console.log('Resolved Address:', data.result.address);
-          setResolvedAddress(data.result.address);
-          const { subdomainProfile, ensDomainProfile } = data.result;
-          const profileToUse = ensDomainProfile || subdomainProfile;
-          if (profileToUse && profileToUse.profileTextRecords.avatar) {
-            setAvatarUrl(profileToUse.profileTextRecords.avatar);
-          }
-          else {
-            setAvatarUrl('');
-          }
-        } else {
-          if (address.startsWith('0x')) {
-            const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByAddress?queryAddress=${address}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            const { subdomainProfile, ensDomainProfile } = data.result;
-            const profileToUse = data.result.primaryDomainType === 'cbid' ? subdomainProfile : ensDomainProfile;
-            if (profileToUse && profileToUse.name) {
-              console.log('0x -> ENS lookup:', profileToUse.name);
-              setResolvedAddress(profileToUse.name);
-              const textRecords = profileToUse.profileTextRecords;
-              if (textRecords && textRecords.avatar) {
-                setAvatarUrl(textRecords.avatar);
-              }
-              else {
-                setAvatarUrl('');
-              }
-            } else {
-              console.log('0x -> ENS lookup:', data.result);
-              setResolvedAddress(address);
-            }
-          } else {
-            setResolvedAddress(address);
-          }
-        }
-      }, 400);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [address]);
+  const { resolvedAddress, avatarUrl } = useEnsResolver(address);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
