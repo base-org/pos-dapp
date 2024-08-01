@@ -1,15 +1,15 @@
-
-
 'use client';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
 import { useEnsResolver } from '../hooks/useEnsResolver';
 import { GeneratePaymentLink } from '../util';
+import QRCode from 'qrcode';
 
 import 'react-toastify/dist/ReactToastify.css';
+import QRCodeFooter from '../component/qrCode';
 
-//users arriving on this page should already be on their target device, so we don't need to ever show a QR code here
+// users arriving on this page should already be on their target device, so we don't need to ever show a QR code here
 
 export default function Payment() {
   const searchParams = useSearchParams();
@@ -20,17 +20,35 @@ export default function Payment() {
   const tip3Param = parseFloat(searchParams.get('tip3') || '0');
   const [customTip, setCustomTip] = useState(0);
   const [activeTip, setActiveTip] = useState(0);
+  const [showQRCode, setShowQRCode] = useState(false);
+
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [qrCodeData, setQrCodeData] = useState('');
 
   const { resolvedAddress, avatarUrl } = useEnsResolver(addressParam);
 
   const handlePayment = () => {
-    const total = amountParam + activeTip;
-    console.log(`Payment triggered! Total amount: ${formatCurrency(total)}`);
+    try {
+      const total = amountParam + activeTip;
+      console.log(`Payment triggered! Total amount: ${formatCurrency(total)}`);
 
-    const eip681Uri = GeneratePaymentLink(total, resolvedAddress || addressParam);
-    console.log('EIP-681 URI:', eip681Uri);
+      const bestGuessAt0xAddress = addressParam && addressParam.startsWith('0x') && addressParam.length == 42 ? addressParam : (resolvedAddress || addressParam);
+      const eip681Uri = GeneratePaymentLink(total, bestGuessAt0xAddress);
+      console.log('EIP-681 URI:', eip681Uri);
 
-    window.location.href = eip681Uri;  
+      window.location.href = eip681Uri;
+      setTimeout(async function(){
+        if(confirm('It looks like this computer doesn\'t know how to handle EIP-681 links.  Would you like to see a QR Code to scan with your phone?')) {
+          setShowQRCode(true);
+          setQrCodeUrl(eip681Uri);
+          const url = await QRCode.toDataURL(eip681Uri);
+          setQrCodeData(url);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Failed to initiate payment. Please try again on your target device.');
+    }
   };
 
   const handleCustomTipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,6 +146,11 @@ export default function Payment() {
         >
           Pay {formatCurrency(total)}
         </button>
+        {showQRCode && (
+          <QRCodeFooter
+            qrCodeData={qrCodeData}
+            qrCodeUrl={qrCodeUrl} />
+        )}
       </div>
       <ToastContainer />
     </main>

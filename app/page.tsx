@@ -62,14 +62,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
     }
   };
 
-  const copyToClipboard = (text: string): void => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success('Text copied to clipboard!');
-    }).catch((err) => {
-      console.error('Could not copy text: ', err);
-    });
-  };
-
   const handleTipChange = (index: number, value: string) => {
     const newTipAmounts = [...tipAmounts];
     newTipAmounts[index] = parseFloat(value) || 0;
@@ -169,7 +161,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           Generate QR Code
         </button>
         {qrCodeUrl && (
-          <QRCodeFooter qrCodeData={qrCodeData} copyToClipboard={copyToClipboard} qrCodeUrl={qrCodeUrl} />
+          <QRCodeFooter qrCodeData={qrCodeData} qrCodeUrl={qrCodeUrl} />
         )}
       </div>
       <Footer />
