@@ -8,6 +8,8 @@ import Footer from './component/footer';
 import { GeneratePaymentLink } from './util';
 import QRCodeFooter from './component/qrCode';
 import { useEnsResolver } from './hooks/useEnsResolver';
+import { useTipHandler } from './hooks/useTipHandler';
+import TipInput from './component/tipInput';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const [address, setAddress] = useState(searchParams.address || '');
@@ -15,21 +17,28 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState('');
   const [error, setError] = useState('');
-  const [tippingEnabled, setTippingEnabled] = useState(searchParams.tip1 || searchParams.tip2 || searchParams.tip3 ? true : false);
-  const [tipAmounts, setTipAmounts] = useState([searchParams.tip1 || 1, searchParams.tip2 || 2, searchParams.tip3 || 3]);
 
   const { resolvedAddress, avatarUrl } = useEnsResolver(address);
+  const initialTips = [searchParams.tip1 || 1, searchParams.tip2 || 2, searchParams.tip3 || 3];
+  const initialPercentageTips = [searchParams.pct1 || 10, searchParams.pct2 || 15, searchParams.pct3 || 20]; // Default percentages
+  const initialPctMode = searchParams.usePct === 'true';
+  const enableTips = searchParams.useTips === 'true';
+  const { tippingEnabled, tipAmounts, percentageMode, percentageTips, handleTipChange, handleTippingToggle, handlePercentageToggle } = useTipHandler(enableTips, initialTips, initialPercentageTips, initialPctMode);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
     queryParams.set('address', address);
-    queryParams.set('amount', amount);
     queryParams.set('tip1', tipAmounts[0].toString());
     queryParams.set('tip2', tipAmounts[1].toString());
     queryParams.set('tip3', tipAmounts[2].toString());
+    queryParams.set('pct1', percentageTips[0].toString());
+    queryParams.set('pct2', percentageTips[1].toString());
+    queryParams.set('pct3', percentageTips[2].toString());
+    queryParams.set('usePct', percentageMode.toString());
+    queryParams.set('useTips', tippingEnabled.toString());
     const newUrl = `${window.location.pathname}?${queryParams.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [address, amount, tipAmounts]);
+  }, [address, tipAmounts, percentageTips, percentageMode, tippingEnabled]);
 
   const generateQrCode = async () => {
     if (!resolvedAddress) {
@@ -47,12 +56,14 @@ export default function Home({ searchParams }: { searchParams: any }) {
       console.log('EIP-681 URI:', eip681Uri);
 
       const totalAmount = tippingEnabled
-        ? parseFloat(amount) + tipAmounts.reduce((acc, tip) => acc + parseFloat(tip), 0)
+        ? parseFloat(amount) + (percentageMode
+          ? percentageTips.reduce((acc, tip) => acc + parseFloat(amount) * (tip / 100), 0)
+          : tipAmounts.reduce((acc, tip) => acc + tip, 0))
         : parseFloat(amount);
       const paymentUrl = tippingEnabled
-        ? `${window.location.origin}/payment?address=${resolvedAddress}&amount=${totalAmount}&tip1=${tipAmounts[0]}&tip2=${tipAmounts[1]}&tip3=${tipAmounts[2]}`
+        ? `${window.location.origin}/payment?address=${resolvedAddress}&amount=${amount}&totalAmount=${totalAmount}&tip1=${tipAmounts[0]}&tip2=${tipAmounts[1]}&tip3=${tipAmounts[2]}&pct1=${percentageTips[0]}&pct2=${percentageTips[1]}&pct3=${percentageTips[2]}&usePct=${percentageMode}&useTips=${tippingEnabled}`
         : eip681Uri;
-
+      
       const url = await QRCode.toDataURL(eip681Uri);
       setQrCodeUrl(paymentUrl);
       setQrCodeData(url);
@@ -60,20 +71,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
       console.error(err);
       setError('Failed to generate QR code');
     }
-  };
-
-  const handleTipChange = (index: number, value: string) => {
-    const newTipAmounts = [...tipAmounts];
-    newTipAmounts[index] = parseFloat(value) || 0;
-    setTipAmounts(newTipAmounts);
-    setQrCodeUrl('');
-    setQrCodeData('');
-  };
-
-  const handleTippingToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTippingEnabled(e.target.checked);
-    setQrCodeUrl('');
-    setQrCodeData('');
   };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,40 +117,15 @@ export default function Home({ searchParams }: { searchParams: any }) {
           value={amount}
           onChange={handleAmountChange}
         />
-        <div>
-          <input
-            type="checkbox"
-            className="mb-4 p-2 mr-2"
-            checked={tippingEnabled}
-            onChange={handleTippingToggle}
-          />
-          <label>Enable Tipping</label>
-        </div>
-        {tippingEnabled && (
-          <div className="mb-4 w-full">
-            <input
-              type="number"
-              className="mb-2 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
-              value={tipAmounts[0]}
-              onChange={(e) => handleTipChange(0, e.target.value)}
-              placeholder="Enter tip amount 1"
-            />
-            <input
-              type="number"
-              className="mb-2 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
-              value={tipAmounts[1]}
-              onChange={(e) => handleTipChange(1, e.target.value)}
-              placeholder="Enter tip amount 2"
-            />
-            <input
-              type="number"
-              className="mb-2 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
-              value={tipAmounts[2]}
-              onChange={(e) => handleTipChange(2, e.target.value)}
-              placeholder="Enter tip amount 3"
-            />
-          </div>
-        )}
+        <TipInput
+          tippingEnabled={tippingEnabled}
+          tipAmounts={tipAmounts}
+          percentageMode={percentageMode}
+          percentageTips={percentageTips}
+          handleTipChange={handleTipChange}
+          handleTippingToggle={handleTippingToggle}
+          handlePercentageToggle={handlePercentageToggle}
+        />
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
           onClick={generateQrCode}

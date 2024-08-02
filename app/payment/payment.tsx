@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
@@ -11,13 +12,21 @@ import QRCodeFooter from '../component/qrCode';
 
 // users arriving on this page should already be on their target device, so we don't need to ever show a QR code here
 
+
 export default function Payment() {
   const searchParams = useSearchParams();
   const addressParam = searchParams.get('address') || '';
   const amountParam = parseFloat(searchParams.get('amount') || '0');
+  const totalAmountParam = parseFloat(searchParams.get('totalAmount') || '0');
   const tip1Param = parseFloat(searchParams.get('tip1') || '0');
   const tip2Param = parseFloat(searchParams.get('tip2') || '0');
   const tip3Param = parseFloat(searchParams.get('tip3') || '0');
+  const pct1Param = parseFloat(searchParams.get('pct1') || '0');
+  const pct2Param = parseFloat(searchParams.get('pct2') || '0');
+  const pct3Param = parseFloat(searchParams.get('pct3') || '0');
+  const usePct = searchParams.get('usePct') === 'true';
+  const useTips = searchParams.get('useTips') === 'true';
+
   const [customTip, setCustomTip] = useState(0);
   const [activeTip, setActiveTip] = useState(0);
   const [showQRCode, setShowQRCode] = useState(false);
@@ -30,7 +39,7 @@ export default function Payment() {
   const handlePayment = () => {
     try {
       const total = amountParam + activeTip;
-      console.log(`Payment triggered! Total amount: ${formatCurrency(total)}`);
+      console.log(`Payment triggered! Total amount: ${formatCurrency(total)} tip: ${formatCurrency(activeTip)}`);
 
       const bestGuessAt0xAddress = addressParam && addressParam.startsWith('0x') && addressParam.length == 42 ? addressParam : (resolvedAddress || addressParam);
       const eip681Uri = GeneratePaymentLink(total, bestGuessAt0xAddress);
@@ -99,45 +108,79 @@ export default function Payment() {
             <span className="font-semibold">Amount:</span>
             <span>{formatCurrency(amountParam)}</span>
           </div>
-          <div className="font-semibold mb-2">Add a tip:</div>
-          <div className="flex justify-between mb-2">
-            <div className="flex space-x-2 w-full">
-              {tip1Param > 0 && (
-                <button
-                  className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === tip1Param ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
-                  onClick={() => handleTipClick(tip1Param)}
-                >
-                  <span>{formatCurrency(tip1Param)}</span>
-                </button>
-              )}
-              {tip2Param > 0 && (
-                <button
-                  className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === tip2Param ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
-                  onClick={() => handleTipClick(tip2Param)}
-                >
-                  <span>{formatCurrency(tip2Param)}</span>
-                </button>
-              )}
-              {tip3Param > 0 && (
-                <button
-                  className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === tip3Param ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
-                  onClick={() => handleTipClick(tip3Param)}
-                >
-                  <span>{formatCurrency(tip3Param)}</span>
-                </button>
-              )}
+          {useTips && (
+            <div>
+              <div className="font-semibold mb-2">Add a tip:</div>
+              <div className="flex justify-between mb-2">
+                <div className="flex space-x-2 w-full">
+                  {usePct ? (
+                    <>
+                      <button
+                        className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === (amountParam * pct1Param / 100) ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
+                        onClick={() => handleTipClick(amountParam * pct1Param / 100)}
+                      >
+                        <span>{pct1Param}%<br/><small>{formatCurrency(amountParam * pct1Param / 100)}</small></span>
+                        
+                      </button>
+                      <button
+                        className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === (amountParam * pct2Param / 100) ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
+                        onClick={() => handleTipClick(amountParam * pct2Param / 100)}
+                      >
+                        <span>{pct2Param}%<br/><small>{formatCurrency(amountParam * pct2Param / 100)}</small></span>
+                      </button>
+                      <button
+                        className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === (amountParam * pct3Param / 100) ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
+                        onClick={() => handleTipClick(amountParam * pct3Param / 100)}
+                      >
+                        <span>{pct3Param}%<br/><small>{formatCurrency(amountParam * pct3Param / 100)}</small></span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {tip1Param > 0 && (
+                        <button
+                          className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === tip1Param ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
+                          onClick={() => handleTipClick(tip1Param)}
+                        >
+                          <span>{formatCurrency(tip1Param)}</span>
+                        </button>
+                      )}
+                      {tip2Param > 0 && (
+                        <button
+                          className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === tip2Param ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
+                          onClick={() => handleTipClick(tip2Param)}
+                        >
+                          <span>{formatCurrency(tip2Param)}</span>
+                        </button>
+                      )}
+                      {tip3Param > 0 && (
+                        <button
+                          className={`flex items-center justify-center p-2 rounded-md w-1/3 ${activeTip === tip3Param ? 'bg-blue-500 text-white border border-gray-300' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
+                          onClick={() => handleTipClick(tip3Param)}
+                        >
+                          <span>{formatCurrency(tip3Param)}</span>
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col mb-2">
+                <label className="font-semibold mb-1">Custom Tip:</label>
+                <input
+                  type="number"
+                  className="p-2 border border-gray-300 rounded-md bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
+                  value={customTip}
+                  onChange={handleCustomTipChange}
+                  placeholder="Enter custom tip amount"
+                  min="0"
+                />
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col mb-2">
-            <label className="font-semibold mb-1">Custom Tip:</label>
-            <input
-              type="number"
-              className="p-2 border border-gray-300 rounded-md bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
-              value={customTip}
-              onChange={handleCustomTipChange}
-              placeholder="Enter custom tip amount"
-              min="0"
-            />
+          )}
+          <div className="flex justify-between mb-2">
+            <span className="font-semibold">Total:</span>
+            <span>{formatCurrency(total)}</span>
           </div>
         </div>
         <button
@@ -151,6 +194,7 @@ export default function Payment() {
             qrCodeData={qrCodeData}
             qrCodeUrl={qrCodeUrl} />
         )}
+
       </div>
       <ToastContainer />
     </main>
