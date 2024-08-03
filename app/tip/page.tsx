@@ -31,11 +31,11 @@ export default function Tip() {
 
   const startConnect = () => {
     window.ethereum.request({ method: 'eth_requestAccounts' })
-    .then(accounts => {
+    .then((accounts:any[]) => {
       console.log('Connected account:', accounts[0]);
       window.location.href = `/tip/${accounts[0]}`;
     })
-    .catch(error => {
+    .catch((error:any) => {
       console.error('User rejected account access', error);
     });
   };

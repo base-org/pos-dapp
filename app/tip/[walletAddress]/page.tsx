@@ -39,7 +39,6 @@ export default function Tip() {
   const OxAddress = returnIfOxAddress(address) || returnIfOxAddress(resolvedAddress);
 
   useEffect(() => {
-    console.log(window.ethereum);
     if (returnIfOxAddress(address)) {
       if (ensResolvedAddress) {
         setResolvedEnsName(ensResolvedAddress);
