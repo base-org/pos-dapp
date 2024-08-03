@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import QRCode from 'qrcode';
 
-import {toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 interface QRCodeFooterProps {
   qrCodeData: string;

@@ -17,6 +17,7 @@ export default function Tip() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [message, setMessage] = useState('');
   const [tipAmount, setTipAmount] = useState(0);
+  const [copyText, setCopyText] = useState('Copy this URL');
 
   const fixedTips = [1, 3, 5];
   const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl } = useEnsResolver(address);
@@ -38,6 +39,7 @@ export default function Tip() {
   const OxAddress = returnIfOxAddress(address) || returnIfOxAddress(resolvedAddress);
 
   useEffect(() => {
+    console.log(window.ethereum);
     if (returnIfOxAddress(address)) {
       if (ensResolvedAddress) {
         setResolvedEnsName(ensResolvedAddress);
@@ -124,11 +126,18 @@ export default function Tip() {
         >
           Send Tip
         </button>
+        <button 
+          className="p-2 bg-blue-500 text-gray-300 rounded-md w-full mb-4"
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.href);
+            setCopyText('Copied!');
+          }}>{copyText}
+        </button>
         <button
           className="p-2 bg-green-500 text-white rounded-md w-full"
           onClick={() => window.open('https://www.coinbase.com/wallet', '_blank')}
         >
-          Don't have a wallet? Get one here!
+          Need a wallet? Get one here!
         </button>
       </div>
       <ToastContainer />
