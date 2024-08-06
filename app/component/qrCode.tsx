@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import QRCode from 'qrcode';
 
 import { toast } from 'react-toastify';
+import { copyToClipboard } from '../util';
 
 interface QRCodeFooterProps {
   qrCodeData: string;
@@ -13,14 +14,6 @@ export default function QRCodeFooter({
   qrCodeUrl,
 }: QRCodeFooterProps) {
   const canvasRef = useRef(null);
-
-  const copyToClipboard = (text: string): void => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success('Text copied to clipboard!');
-    }).catch((err) => {
-      console.error('Could not copy text: ', err);
-    });
-  };
 
   const copyQrCodeImage = () => {
     const canvas = canvasRef.current;
@@ -48,7 +41,7 @@ export default function QRCodeFooter({
       <div className="flex space-x-2 justify-center">
         <button
           className="p-2 bg-green-500 text-white rounded-md"
-          onClick={() => copyToClipboard(qrCodeUrl)}
+          onClick={() => copyToClipboard(qrCodeUrl, toast)}
         >
           Copy QR Code URL
         </button>
