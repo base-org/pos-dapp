@@ -1,9 +1,35 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { ProviderRequiredError, resolveAvatarUrl } from './resolveAvatarUrl'; // Make sure the path is correct
+import { ethers } from 'ethers';
 
-export function useEnsResolver(address: string) {
+export function useEnsResolver(
+  address: string,
+  provider: ethers.BrowserProvider | null
+) {
   const [resolvedAddress, setResolvedAddress] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [needsProvider, setNeedsProvider] = useState(false);
+
+  const resolveAvatar = async (profileToUse: any, provider: ethers.BrowserProvider | null) => {
+    const textRecords = profileToUse.profileTextRecords;
+    if (textRecords && textRecords.avatar) {
+      const record = profileToUse.profileTextRecords.avatar;
+      try {
+        const avatar = await resolveAvatarUrl(record, provider);
+        setAvatarUrl(avatar);
+      } catch (error) {
+        if (error instanceof ProviderRequiredError) {
+          // Signal to user to connect wallet
+          setNeedsProvider(true);
+        } else {
+          console.error(error);
+        }
+      }
+    } else {
+      setAvatarUrl('');
+    }
+  };
 
   useEffect(() => {
     if (address) {
@@ -18,11 +44,7 @@ export function useEnsResolver(address: string) {
             setResolvedAddress(data.result.address);
             const { subdomainProfile, ensDomainProfile } = data.result;
             const profileToUse = ensDomainProfile || subdomainProfile;
-            if (profileToUse && profileToUse.profileTextRecords.avatar) {
-              setAvatarUrl(profileToUse.profileTextRecords.avatar);
-            } else {
-              setAvatarUrl('');
-            }
+            await resolveAvatar(profileToUse, provider);
           } else {
             if (address.startsWith('0x')) {
               const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByAddress?queryAddress=${address}`;
@@ -36,12 +58,7 @@ export function useEnsResolver(address: string) {
               if (profileToUse && profileToUse.name) {
                 console.log('0x -> ENS lookup:', profileToUse.name);
                 setResolvedAddress(profileToUse.name);
-                const textRecords = profileToUse.profileTextRecords;
-                if (textRecords && textRecords.avatar) {
-                  setAvatarUrl(textRecords.avatar);
-                } else {
-                  setAvatarUrl('');
-                }
+                await resolveAvatar(profileToUse, provider);
               } else {
                 console.log('0x -> ENS lookup:', data.result);
                 setResolvedAddress(address);
@@ -60,7 +77,7 @@ export function useEnsResolver(address: string) {
       }, 400);
       return () => clearTimeout(timeoutId);
     }
-  }, [address]);
+  }, [address, provider]);
 
-  return { resolvedAddress, avatarUrl };
+  return { resolvedAddress, avatarUrl, needsProvider };
 }

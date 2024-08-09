@@ -64,10 +64,23 @@ export default function XMTPForChatbot() {
       }
 
       // Convert Uint8Array to a binary string
-      const binaryString = new TextDecoder().decode(keys);
+      const binaryString = keys; //new TextDecoder().decode(keys);
 
-      const base64String = Buffer.from(binaryString).toString('base64');
+      const base64String = Buffer.from(binaryString).toString('hex');
 
+      /*
+      console.log(base64String);
+
+      const client = await Client.create(null, {privateKeyOverride:keys, env: 'production'});
+
+      console.log(client);
+
+      const list = await client.conversations.list();
+
+      console.log(list.length);
+      const convo = list[list.length-1];
+      console.log(await convo.messages());
+      */
       setXmtpKeys(base64String);
     } catch (error) {
       console.error('Failed to connect to XMTP', error);

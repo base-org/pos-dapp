@@ -6,6 +6,7 @@ import { useEnsResolver } from '../../hooks/useEnsResolver';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GeneratePaymentLink } from '@/app/util';
+import { useWallet } from '@/app/hooks/useWallet';
 
 export default function Tip() {
   const pathname = usePathname();
@@ -20,7 +21,8 @@ export default function Tip() {
   const [copyText, setCopyText] = useState('Copy this URL');
 
   const fixedTips = [1, 3, 5];
-  const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl } = useEnsResolver(address);
+  const { provider, isConnected, connectWallet } = useWallet();
+  const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl, needsProvider } = useEnsResolver(address, provider);
 
   const returnIfOxAddress = (address: string) => {
     if (address && address.startsWith('0x') && address.length === 42) {
@@ -28,7 +30,7 @@ export default function Tip() {
     }
     return undefined;
   }
-  
+
   const returnIfEnsName = (address: string) => {
     if (address && !address.startsWith('0x')) {
       return address;
@@ -63,13 +65,13 @@ export default function Tip() {
       toast.error('Invalid address');
       return;
     }
-    
+
     const eip681Uri = GeneratePaymentLink(tipAmount, resolvedAddress);
     console.log('EIP-681 URI:', eip681Uri);
 
     window.location.href = eip681Uri;
-    setTimeout(async function(){
-      if(confirm('It looks like this device doesn\'t know how to handle EIP-681 links.  Would you like to get a wallet?')) {
+    setTimeout(async function () {
+      if (confirm('It looks like this device doesn\'t know how to handle EIP-681 links.  Would you like to get a wallet?')) {
         window.location.href = `https://go.cb-w.com/dapp?cb_url=${window.location.origin}/tip/${OxAddress}`;
       }
     }, 1000);
@@ -92,6 +94,15 @@ export default function Tip() {
             {address !== resolvedAddress && <p className="text-sm text-gray-500">{resolvedAddress}</p>}
           </div>
         </div>
+        {!isConnected && needsProvider && !avatarUrl && (
+            <button
+              onClick={connectWallet}
+              className="mb-4 p-2 bg-blue-500 text-white rounded-md"
+              disabled={isConnected}
+            >
+              Connect Wallet to Load Avatar
+            </button>
+          )}
         <p className="text-sm text-gray-500 mb-4">Select an amount to tip:</p>
         <div className="flex justify-around mb-4 w-full">
           {fixedTips.map((tip) => (
@@ -125,7 +136,7 @@ export default function Tip() {
         >
           Send Tip
         </button>
-        <button 
+        <button
           className="p-2 bg-blue-500 text-gray-300 rounded-md w-full mb-4"
           onClick={() => {
             navigator.clipboard.writeText(window.location.href);

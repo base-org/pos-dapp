@@ -14,3 +14,35 @@ export const copyToClipboard = (text: string, toast:any): void => {
   });
 };
 
+import { ethers } from 'ethers';
+
+// Helper function to convert IPFS URLs to HTTP URLs
+export function convertToHttpUrl(ipfsUrl:string) {
+  if (ipfsUrl.startsWith('ipfs://')) {
+    return ipfsUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+  }
+  return ipfsUrl;
+}
+
+// Helper function to fetch NFT metadata
+export async function fetchNftMetadata(uri:string, provider:ethers.BrowserProvider) {
+  const [chainId, contractType, contractAddress, tokenId] = uri.split(/[:/]+/).slice(1);
+
+  if (chainId !== '1' || contractType !== 'erc721') {
+    throw new Error('Unsupported chain or contract type');
+  }
+
+  const contract = new ethers.Contract(contractAddress, [
+    'function tokenURI(uint256 tokenId) public view returns (string memory)',
+  ], provider);
+
+  let tokenURI = await contract.tokenURI(tokenId);
+  tokenURI = convertToHttpUrl(tokenURI);
+
+  const response = await fetch(tokenURI);
+  const metadata = await response.json();
+
+  const imageUrl = convertToHttpUrl(metadata.image);
+
+  return { tokenURI, metadata, imageUrl };
+}

@@ -10,17 +10,19 @@ import QRCodeFooter from './component/qrCode';
 import { useEnsResolver } from './hooks/useEnsResolver';
 import { useTipHandler } from './hooks/useTipHandler';
 import TipInput from './component/tipInput';
+import { useWallet } from './hooks/useWallet';
 
 export default function Home({ searchParams }: { searchParams: any }) {
-  const [address, setAddress] = useState(searchParams.address || '');
+  const { provider, isConnected, account, connectWallet } = useWallet(); // Use the useWallet hook
+  const [address, setAddress] = useState(searchParams.address || account || '');
   const [amount, setAmount] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState('');
   const [error, setError] = useState('');
 
-  const { resolvedAddress, avatarUrl } = useEnsResolver(address);
+  const { resolvedAddress, avatarUrl, needsProvider } = useEnsResolver(address, provider); // Pass provider to useEnsResolver
   const initialTips = [searchParams.tip1 || 1, searchParams.tip2 || 2, searchParams.tip3 || 3];
-  const initialPercentageTips = [searchParams.pct1 || 10, searchParams.pct2 || 15, searchParams.pct3 || 20]; // Default percentages
+  const initialPercentageTips = [searchParams.pct1 || 10, searchParams.pct2 || 15, searchParams.pct3 || 20];
   const initialPctMode = searchParams.usePct === 'true';
   const enableTips = searchParams.useTips === 'true';
   const { tippingEnabled, tipAmounts, percentageMode, percentageTips, handleTipChange, handleTippingToggle, handlePercentageToggle } = useTipHandler(enableTips, initialTips, initialPercentageTips, initialPctMode);
@@ -94,12 +96,22 @@ export default function Home({ searchParams }: { searchParams: any }) {
           EIP-681 QR Code Generator
         </p>
 
+        {!isConnected && needsProvider && (
+          <button
+            onClick={connectWallet}
+            className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
+          >
+            Connect Wallet to resolve Avatar NFT
+          </button>
+        )}
+
         <input
           type="text"
           className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
           placeholder="To Address"
           value={address}
           onChange={handleAddressChange}
+          disabled={!isConnected}
         />
         {avatarUrl && (
           <img
@@ -116,6 +128,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           placeholder="Amount"
           value={amount}
           onChange={handleAmountChange}
+          disabled={!isConnected}
         />
         <TipInput
           tippingEnabled={tippingEnabled}
@@ -129,6 +142,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
           onClick={generateQrCode}
+          disabled={!isConnected}
         >
           Generate QR Code
         </button>
