@@ -26,7 +26,14 @@ export default function Tip() {
     return baseAmount + tipAmount;
   }, [baseAmount, tipAmount]);
 
-  const fixedTips = [1, 3, 5];
+  const fixedTipType = baseAmount > 10 ? 'percent' : 'currency';
+  const fixedTips = fixedTipType === 'percent' ? [.1, .15, .2] : [1, 3, 5];
+  const isSelectedFixedTip = (i: number) => {
+    if (fixedTipType === 'percent') {
+      return tipAmount === baseAmount * fixedTips[i];
+    }
+    return tipAmount === fixedTips[i];
+  }
   const { provider, isConnected, connectWallet } = useWallet();
   const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl, needsProvider } = useEnsResolver(address, provider);
 
@@ -63,9 +70,11 @@ export default function Tip() {
   }, [address, ensResolvedAddress, ensAvatarUrl, router]);
 
   const handleTipClick = (amount: number) => {
+    if (fixedTipType === 'percent') {
+      amount = baseAmount * amount;
+    }
     if (amount === tipAmount) {
-      setTipAmount(0);
-      return;
+      amount = 0;
     }
     setTipAmount(amount);
   };
@@ -119,13 +128,17 @@ export default function Tip() {
         </div>
         <p className="text-sm text-gray-500 mb-4">Select an amount to tip:</p>
         <div className="flex justify-around mb-4 w-full">
-          {fixedTips.map((tip) => (
+          {fixedTips.map((tip, i) => (
             <button
               key={tip}
-              className={`p-2 m-1 rounded-md w-1/3 ${tipAmount === tip ? 'bg-blue-500 text-white border' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
+              className={`p-2 m-1 rounded-md w-1/3 ${isSelectedFixedTip(i) ? 'bg-blue-500 text-white border' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}
               onClick={() => handleTipClick(tip)}
             >
-              ${tip}
+              {tip.toLocaleString([], {
+                style: fixedTipType,
+                currency: "usd",
+                maximumFractionDigits: 0,
+              })}
             </button>
           ))}
         </div>
