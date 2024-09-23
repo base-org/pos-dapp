@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEnsResolver } from '../../hooks/useEnsResolver';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -10,6 +10,7 @@ import { useWallet } from '@/app/hooks/useWallet';
 
 export default function Tip() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const walletAddress = pathname.split('/').pop();
   const [address, setAddress] = useState(walletAddress || '');
@@ -19,6 +20,9 @@ export default function Tip() {
   const [message, setMessage] = useState('');
   const [tipAmount, setTipAmount] = useState(0);
   const [copyText, setCopyText] = useState('Copy this URL');
+  
+  const baseAmount = parseFloat(searchParams.get('baseAmount') || '0');
+  const totalAmount = useMemo(() => baseAmount + tipAmount, [baseAmount, tipAmount]);
 
   const fixedTips = [1, 3, 5];
   const { provider, isConnected, connectWallet } = useWallet();
@@ -46,7 +50,8 @@ export default function Tip() {
         setResolvedEnsName(ensResolvedAddress);
         setResolvedAddress(address);
         setAvatarUrl(ensAvatarUrl);
-        router.replace(`/tip/${ensResolvedAddress}`);
+        const currentSearchParams = new URLSearchParams(window.location.search);
+        router.replace(`${pathname}?${currentSearchParams.toString()}`);
       }
     } else {
       setResolvedEnsName(address);
@@ -56,17 +61,21 @@ export default function Tip() {
   }, [address, ensResolvedAddress, ensAvatarUrl, router]);
 
   const handleTipClick = (amount: number) => {
+    if (amount === tipAmount) {
+      setTipAmount(0);
+      return;
+    }
     setTipAmount(amount);
   };
 
   const handleTransaction = () => {
-    console.log(`Transaction of ${tipAmount} USDC to ${OxAddress} ${resolvedAddress}`);
+    console.log(`Transaction of ${totalAmount} USDC to ${OxAddress} ${resolvedAddress}`);
     if (!OxAddress) {
       toast.error('Invalid address');
       return;
     }
 
-    const eip681Uri = GeneratePaymentLink(tipAmount, resolvedAddress);
+    const eip681Uri = GeneratePaymentLink(totalAmount, resolvedAddress);
     console.log('EIP-681 URI:', eip681Uri);
 
     window.location.href = eip681Uri;
@@ -95,14 +104,17 @@ export default function Tip() {
           </div>
         </div>
         {!isConnected && needsProvider && !avatarUrl && (
-            <button
-              onClick={connectWallet}
-              className="mb-4 p-2 bg-blue-500 text-white rounded-md"
-              disabled={isConnected}
-            >
-              Connect Wallet to Load Avatar
-            </button>
-          )}
+          <button
+            onClick={connectWallet}
+            className="mb-4 p-2 bg-blue-500 text-white rounded-md"
+            disabled={isConnected}
+          >
+            Connect Wallet to Load Avatar
+          </button>
+        )}
+        <div className="mb-4 font-bold text-xl">
+          Total: {totalAmount.toLocaleString([], { style: "currency", currency: "usd" })}
+        </div>
         <p className="text-sm text-gray-500 mb-4">Select an amount to tip:</p>
         <div className="flex justify-around mb-4 w-full">
           {fixedTips.map((tip) => (
