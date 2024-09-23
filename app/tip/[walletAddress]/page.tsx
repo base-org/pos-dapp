@@ -178,7 +178,7 @@ export default function Tip() {
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
           onClick={() => handleTransaction({useQrCode: false})}
         >
-          Send Tip
+          Pay Total
         </button>
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"

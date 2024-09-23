@@ -11,6 +11,7 @@ import { useEnsResolver } from './hooks/useEnsResolver';
 import { useTipHandler } from './hooks/useTipHandler';
 import TipInput from './component/tipInput';
 import { useWallet } from './hooks/useWallet';
+import Link from 'next/link';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const { provider, isConnected, account, connectWallet } = useWallet(); // Use the useWallet hook
@@ -139,6 +140,17 @@ export default function Home({ searchParams }: { searchParams: any }) {
           handleTippingToggle={handleTippingToggle}
           handlePercentageToggle={handlePercentageToggle}
         />
+        <Link 
+          href={`/tip/${resolvedAddress}?baseAmount=${amount}`}
+          className="w-full"
+        >
+          <button
+            className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
+            disabled={!isConnected}
+          >
+            Accept Tip
+          </button>
+        </Link>
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
           onClick={generateQrCode}
