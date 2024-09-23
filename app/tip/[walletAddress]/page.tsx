@@ -189,7 +189,7 @@ export default function Tip() {
           {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
         </button>
         {showQRCode && (
-          <div className="w-full mx-auto">
+          <div className="w-full mx-auto mb-8">
             <QRCodeFooter
               qrCodeData={qrCodeData}
               qrCodeUrl={qrCodeUrl}
