@@ -22,7 +22,9 @@ export default function Tip() {
   const [copyText, setCopyText] = useState('Copy this URL');
   
   const baseAmount = parseFloat(searchParams.get('baseAmount') || '0');
-  const totalAmount = useMemo(() => baseAmount + tipAmount, [baseAmount, tipAmount]);
+  const totalAmount = useMemo(() => {
+    return baseAmount + tipAmount;
+  }, [baseAmount, tipAmount]);
 
   const fixedTips = [1, 3, 5];
   const { provider, isConnected, connectWallet } = useWallet();
@@ -133,7 +135,10 @@ export default function Tip() {
           className="mb-4 p-2 border border-gray-300 rounded-md w-full bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
           placeholder="Custom tip amount"
           value={tipAmount}
-          onChange={(e) => setTipAmount(parseFloat(e.target.value))}
+          onChange={(e) => {
+            const value = parseFloat(e.target.value);
+            setTipAmount(isNaN(value) ? 0 : value);
+          }}
           min="0"
         />
         <textarea
