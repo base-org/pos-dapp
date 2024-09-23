@@ -7,6 +7,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GeneratePaymentLink } from '@/app/util';
 import { useWallet } from '@/app/hooks/useWallet';
+import QRCode from 'qrcode';
+import QRCodeFooter from '@/app/component/qrCode';
 
 export default function Tip() {
   const pathname = usePathname();
@@ -34,6 +36,11 @@ export default function Tip() {
     }
     return tipAmount === fixedTips[i];
   }
+
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [qrCodeData, setQrCodeData] = useState('');
+  const [showQRCode, setShowQRCode] = useState(false);
+
   const { provider, isConnected, connectWallet } = useWallet();
   const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl, needsProvider } = useEnsResolver(address, provider);
 
@@ -79,7 +86,7 @@ export default function Tip() {
     setTipAmount(amount);
   };
 
-  const handleTransaction = () => {
+  const handleTransaction = ({ useQrCode }: { useQrCode: boolean }) => {
     console.log(`Transaction of ${totalAmount} USDC to ${OxAddress} ${resolvedAddress}`);
     if (!OxAddress) {
       toast.error('Invalid address');
@@ -91,6 +98,13 @@ export default function Tip() {
 
     window.location.href = eip681Uri;
     setTimeout(async function () {
+      if (useQrCode) {
+        setShowQRCode(true);
+        setQrCodeUrl(eip681Uri);
+        const url = await QRCode.toDataURL(eip681Uri);
+        setQrCodeData(url);
+        return;
+      }
       if (confirm('It looks like this device doesn\'t know how to handle EIP-681 links.  Would you like to get a wallet?')) {
         window.location.href = `https://go.cb-w.com/dapp?cb_url=${window.location.origin}/tip/${OxAddress}`;
       }
@@ -162,10 +176,26 @@ export default function Tip() {
         />
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
-          onClick={handleTransaction}
+          onClick={() => handleTransaction({useQrCode: false})}
         >
           Send Tip
         </button>
+        <button
+          className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
+          onClick={() => {
+            showQRCode ? setShowQRCode(false) : handleTransaction({useQrCode: true});
+          }}
+        >
+          {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
+        </button>
+        {showQRCode && (
+          <div className="w-full mx-auto">
+            <QRCodeFooter
+              qrCodeData={qrCodeData}
+              qrCodeUrl={qrCodeUrl}
+            />
+          </div>
+        )}
         <button
           className="p-2 bg-blue-500 text-gray-300 rounded-md w-full mb-4"
           onClick={() => {
