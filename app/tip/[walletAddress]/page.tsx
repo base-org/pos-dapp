@@ -23,6 +23,29 @@ export default function Tip() {
   const [tipAmount, setTipAmount] = useState(0);
   const [copyText, setCopyText] = useState('Copy this URL');
   
+  const uuid = searchParams.get('uuid');
+  const [txHash, setTxHash] = useState<string>();
+
+  useEffect(() => {
+    if (uuid) {
+      const intervalId = setInterval(async () => {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams/${uuid}`);
+          const data = await response.json();
+          if (data.txHash) {
+            setTxHash(data.txHash);
+            clearInterval(intervalId); // Stop polling once we get the transaction hash
+          }
+        } catch (error) {
+          console.error('Polling error:', error);
+        }
+      }, 5000);
+
+      return () => {
+        clearInterval(intervalId);
+      };
+    }
+  }, [uuid]);
   const baseAmount = parseFloat(searchParams.get('baseAmount') || '0');
   const totalAmount = useMemo(() => {
     return baseAmount + tipAmount;
@@ -140,6 +163,18 @@ export default function Tip() {
         <div className="mb-4 font-bold text-xl">
           Total: {totalAmount.toLocaleString([], { style: "currency", currency: "usd" })}
         </div>
+        {txHash && (
+          <div className="mb-4">
+            <a
+              href={`https://basescan.org/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500"
+            >
+              View Transaction
+            </a>
+          </div>
+        )}
         <p className="text-sm text-gray-500 mb-4">Select an amount to tip:</p>
         <div className="flex justify-around mb-4 w-full">
           {fixedTips.map((tip, i) => (

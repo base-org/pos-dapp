@@ -11,9 +11,10 @@ import { useEnsResolver } from './hooks/useEnsResolver';
 import { useTipHandler } from './hooks/useTipHandler';
 import TipInput from './component/tipInput';
 import { useWallet } from './hooks/useWallet';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Home({ searchParams }: { searchParams: any }) {
+  const router = useRouter();
   const { provider, isConnected, account, connectWallet } = useWallet(); // Use the useWallet hook
   const [address, setAddress] = useState(searchParams.address || account || '');
   const [amount, setAmount] = useState('');
@@ -88,6 +89,32 @@ export default function Home({ searchParams }: { searchParams: any }) {
     setQrCodeData('');
   };
 
+  const createPaymentLink = async () => {
+    // create a payment uuid
+    // const createUuidRes = await fetch(`/api/createPaymentUuid`, {
+    //   method: 'POST',
+    // });
+    const createUuidRes = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        payloadType: 'eip681',
+        toAddress: resolvedAddress,
+        value: amount,
+        chainId: '8453',
+        contractAddress: resolvedAddress,
+      }),
+    });
+    const { uuid } = await createUuidRes.json() as { uuid: string };
+    // send the user to the payment page
+    // window.location.href = `/tip/${resolvedAddress}?baseAmount=${amount}&uuid=${uuid}`;
+
+    router.push(`/tip/${resolvedAddress}?baseAmount=${amount}&uuid=${uuid}`);
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-24">
       <div className="relative flex flex-col items-center p-6 bg-white dark:bg-gray-800 shadow-md rounded-md w-full max-w-md">
@@ -140,17 +167,13 @@ export default function Home({ searchParams }: { searchParams: any }) {
           handleTippingToggle={handleTippingToggle}
           handlePercentageToggle={handlePercentageToggle}
         />
-        <Link 
-          href={`/tip/${resolvedAddress}?baseAmount=${amount}`}
-          className="w-full"
+        <button
+          className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
+          disabled={!isConnected}
+          onClick={createPaymentLink}
         >
-          <button
-            className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
-            disabled={!isConnected}
-          >
-            Accept Tip
-          </button>
-        </Link>
+          Accept Tip
+        </button>
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
           onClick={generateQrCode}
