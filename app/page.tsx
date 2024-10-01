@@ -109,10 +109,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
       }),
     });
     const { uuid } = await createUuidRes.json() as { uuid: string };
-    console.log({ uuid });
-    // send the user to the payment page
-    // window.location.href = `/tip/${resolvedAddress}?baseAmount=${amount}&uuid=${uuid}`;
-
     router.push(`/tip/${resolvedAddress}?baseAmount=${amount}&uuid=${uuid}`);
   }
 
