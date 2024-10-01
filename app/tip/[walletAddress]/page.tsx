@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEnsResolver } from '../../hooks/useEnsResolver';
 import { ToastContainer, toast } from 'react-toastify';
@@ -9,6 +9,9 @@ import { GeneratePaymentLink } from '@/app/util';
 import { useWallet } from '@/app/hooks/useWallet';
 import QRCode from 'qrcode';
 import QRCodeFooter from '@/app/component/qrCode';
+import { EXAMPLE_EIP_712_PAYLOAD } from '@/app/constants';
+
+const NFC_RELAYER_URL = 'https://nfc-relayer.vercel.app/api/paymentTxParams';
 
 export default function Tip() {
   const pathname = usePathname();
@@ -111,6 +114,26 @@ export default function Tip() {
     }, 1000);
   };
 
+  const handleEip712TapToPay = useCallback(async () => {
+    // make a POST request to the NFC relayer
+    const response = await fetch(NFC_RELAYER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(EXAMPLE_EIP_712_PAYLOAD),
+    });
+    console.log({ response });
+
+    // window.ethereum.request({
+    //   method: 'requestContactlessPayment',
+    //   params: {
+    //     type: 2,
+    //     uri: response
+    //   },
+    // });
+  }, []);
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-cover bg-center" style={{ backgroundImage: `url(${avatarUrl})` }}>
       <div className="absolute inset-0 bg-black opacity-50"></div>
@@ -202,6 +225,9 @@ export default function Tip() {
             navigator.clipboard.writeText(window.location.href);
             setCopyText('Copied!');
           }}>{copyText}
+        </button>
+        <button className="p-2 bg-blue-500 text-gray-300 rounded-md w-full mb-4" onClick={handleEip712TapToPay}>
+          Tap to Pay EIP-712
         </button>
         <button
           className="p-2 bg-green-500 text-white rounded-md w-full"
