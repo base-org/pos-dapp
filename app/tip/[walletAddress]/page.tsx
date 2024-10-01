@@ -12,6 +12,7 @@ import QRCodeFooter from '@/app/component/qrCode';
 import { EXAMPLE_EIP_712_PAYLOAD } from '@/app/constants';
 
 import useRealtimeDb from '@/app/hooks/useRealtimeDb';
+import { generateEip712Payload } from '@/app/utils';
 
 const NFC_RELAYER_URL = 'https://nfc-relayer.vercel.app/api/paymentTxParams';
 
@@ -137,7 +138,7 @@ export default function Tip() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(EXAMPLE_EIP_712_PAYLOAD),
+      body: JSON.stringify(generateEip712Payload()),
     });
 
     const responseJson = await response.json();
