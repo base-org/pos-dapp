@@ -14,8 +14,6 @@ import { EXAMPLE_EIP_712_PAYLOAD } from '@/app/constants';
 import useRealtimeDb from '@/app/hooks/useRealtimeDb';
 import { generateEip712Payload } from '@/app/utils';
 
-const NFC_RELAYER_URL = 'https://nfc-relayer.vercel.app/api/paymentTxParams';
-
 export default function Tip() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -133,7 +131,7 @@ export default function Tip() {
 
   const handleEip712TapToPay = useCallback(async () => {
     // make a POST request to the NFC relayer
-    const response = await fetch(NFC_RELAYER_URL, {
+    const response = await fetch(process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -257,7 +255,7 @@ export default function Tip() {
             setCopyText('Copied!');
           }}>{copyText}
         </button>
-        <button className="p-2 bg-blue-500 text-gray-300 rounded-md w-full mb-4" onClick={handleEip712TapToPay}>
+        <button className="p-2 bg-blue-500 rounded-md w-full mb-4" onClick={handleEip712TapToPay}>
           Tap to Pay EIP-712
         </button>
         <button
