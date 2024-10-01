@@ -123,15 +123,17 @@ export default function Tip() {
       },
       body: JSON.stringify(EXAMPLE_EIP_712_PAYLOAD),
     });
-    console.log({ response });
 
-    // window.ethereum.request({
-    //   method: 'requestContactlessPayment',
-    //   params: {
-    //     type: 2,
-    //     uri: response
-    //   },
-    // });
+    const responseJson = await response.json();
+    const { uuid } = responseJson;
+
+    window.ethereum.request({
+      method: 'requestContactlessPayment',
+      params: [{
+        type: 2,
+        uri: `${NFC_RELAYER_URL}/${uuid}`
+      }],
+    });
   }, []);
 
   return (
