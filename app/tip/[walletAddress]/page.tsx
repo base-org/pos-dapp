@@ -131,7 +131,7 @@ export default function Tip() {
 
   const handleEip712TapToPay = useCallback(async () => {
     // make a POST request to the NFC relayer
-    const response = await fetch(process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/paymentTxParams` as string, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
