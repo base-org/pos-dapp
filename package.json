@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
     "@xmtp/xmtp-js": "10.0.0",
     "ethers": "^6.13.2",
     "next": "^14.2.5",

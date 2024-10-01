@@ -11,6 +11,8 @@ import QRCode from 'qrcode';
 import QRCodeFooter from '@/app/component/qrCode';
 import { EXAMPLE_EIP_712_PAYLOAD } from '@/app/constants';
 
+import useRealtimeDb from '@/app/hooks/useRealtimeDb';
+
 const NFC_RELAYER_URL = 'https://nfc-relayer.vercel.app/api/paymentTxParams';
 
 export default function Tip() {
@@ -26,6 +28,20 @@ export default function Tip() {
   const [tipAmount, setTipAmount] = useState(0);
   const [copyText, setCopyText] = useState('Copy this URL');
   
+  const uuid = searchParams.get('uuid');
+  const [txHash, setTxHash] = useState<string>();
+  const dbUpdates = useRealtimeDb({
+    event: 'UPDATE',
+    channel: 'ContactlessPaymentTxOrMsg',
+    table: 'ContactlessPaymentTxOrMsg',
+    filter: `uuid=eq.${uuid}`,
+  });
+
+  useEffect(() => {
+    const lastUpdate = dbUpdates[dbUpdates.length - 1];
+    setTxHash(lastUpdate?.txHash);
+  }, [dbUpdates]);
+
   const baseAmount = parseFloat(searchParams.get('baseAmount') || '0');
   const totalAmount = useMemo(() => {
     return baseAmount + tipAmount;
@@ -165,6 +181,18 @@ export default function Tip() {
         <div className="mb-4 font-bold text-xl">
           Total: {totalAmount.toLocaleString([], { style: "currency", currency: "usd" })}
         </div>
+        {txHash && (
+          <div className="mb-4">
+            <a
+              href={`https://basescan.org/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500"
+            >
+              View Transaction
+            </a>
+          </div>
+        )}
         <p className="text-sm text-gray-500 mb-4">Select an amount to tip:</p>
         <div className="flex justify-around mb-4 w-full">
           {fixedTips.map((tip, i) => (
