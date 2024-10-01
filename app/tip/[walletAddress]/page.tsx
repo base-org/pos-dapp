@@ -9,6 +9,7 @@ import { GeneratePaymentLink } from '@/app/util';
 import { useWallet } from '@/app/hooks/useWallet';
 import QRCode from 'qrcode';
 import QRCodeFooter from '@/app/component/qrCode';
+import useRealtimeDb from '@/app/hooks/useRealtimeDb';
 
 export default function Tip() {
   const pathname = usePathname();
@@ -25,27 +26,18 @@ export default function Tip() {
   
   const uuid = searchParams.get('uuid');
   const [txHash, setTxHash] = useState<string>();
+  const dbUpdates = useRealtimeDb({
+    event: 'UPDATE',
+    channel: 'ContactlessPaymentTxOrMsg',
+    table: 'ContactlessPaymentTxOrMsg',
+    filter: `uuid=eq.${uuid}`,
+  });
 
   useEffect(() => {
-    if (uuid) {
-      const intervalId = setInterval(async () => {
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams/${uuid}`);
-          const data = await response.json();
-          if (data.txHash) {
-            setTxHash(data.txHash);
-            clearInterval(intervalId); // Stop polling once we get the transaction hash
-          }
-        } catch (error) {
-          console.error('Polling error:', error);
-        }
-      }, 5000);
+    const lastUpdate = dbUpdates[dbUpdates.length - 1];
+    setTxHash(lastUpdate?.txHash);
+  }, [dbUpdates]);
 
-      return () => {
-        clearInterval(intervalId);
-      };
-    }
-  }, [uuid]);
   const baseAmount = parseFloat(searchParams.get('baseAmount') || '0');
   const totalAmount = useMemo(() => {
     return baseAmount + tipAmount;
