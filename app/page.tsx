@@ -90,10 +90,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
   };
 
   const createPaymentLink = async () => {
-    // create a payment uuid
-    // const createUuidRes = await fetch(`/api/createPaymentUuid`, {
-    //   method: 'POST',
-    // });
     const createUuidRes = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams`, {
       method: 'POST',
       headers: {
