@@ -127,28 +127,6 @@ export default function Tip() {
     }, 1000);
   };
 
-  const handleEip712TapToPay = useCallback(async () => {
-    // make a POST request to the NFC relayer
-    const response = await fetch(process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(generateEip712Payload()),
-    });
-
-    const responseJson = await response.json();
-    const { uuid } = responseJson;
-
-    window.ethereum.request({
-      method: 'requestContactlessPayment',
-      params: [{
-        type: 2,
-        uri: `${process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string}/${uuid}`
-      }],
-    });
-  }, []);
-
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-cover bg-center" style={{ backgroundImage: `url(${avatarUrl})` }}>
       <div className="absolute inset-0 bg-black opacity-50"></div>
