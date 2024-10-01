@@ -146,7 +146,7 @@ export default function Tip() {
       method: 'requestContactlessPayment',
       params: [{
         type: 2,
-        uri: `${NFC_RELAYER_URL}/${uuid}`
+        uri: `${process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string}/${uuid}`
       }],
     });
   }, []);
