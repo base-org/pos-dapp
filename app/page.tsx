@@ -117,7 +117,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
         method: 'requestContactlessPayment',
         params: [{
           type: 2,
-          uri: `${process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string}/${uuid}`
+          uri: `${process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string}/paymentTxParams/${uuid}`
         }],
       });
     }
