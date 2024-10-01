@@ -12,6 +12,8 @@ import { useTipHandler } from './hooks/useTipHandler';
 import TipInput from './component/tipInput';
 import { useWallet } from './hooks/useWallet';
 import { useRouter } from 'next/navigation';
+import { type PaymentMethod } from '@/app/types/payments';
+import { generateEip712Payload } from '@/app/utils';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const router = useRouter();
@@ -89,23 +91,36 @@ export default function Home({ searchParams }: { searchParams: any }) {
     setQrCodeData('');
   };
 
-  const createPaymentLink = async () => {
+  const createPaymentLink = async (txType: PaymentMethod) => {
+    const body = txType === 'eip681' ? {
+      payloadType: 'eip681',
+      toAddress: resolvedAddress,
+      value: amount,
+      chainId: '8453',
+      contractAddress: resolvedAddress,
+    } : generateEip712Payload();
+
     const createUuidRes = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({
-        payloadType: 'eip681',
-        toAddress: resolvedAddress,
-        value: amount,
-        chainId: '8453',
-        contractAddress: resolvedAddress,
-      }),
+      body: JSON.stringify(body),
     });
     const { uuid } = await createUuidRes.json() as { uuid: string };
-    router.push(`/tip/${resolvedAddress}?baseAmount=${amount}&uuid=${uuid}`);
+
+    if (txType === 'eip681') {
+      router.push(`/tip/${resolvedAddress}?baseAmount=${amount}&uuid=${uuid}`);
+    } else {
+      window.ethereum.request({
+        method: 'requestContactlessPayment',
+        params: [{
+          type: 2,
+          uri: `${process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string}/${uuid}`
+        }],
+      });
+    }
   }
 
   return (
@@ -163,9 +178,16 @@ export default function Home({ searchParams }: { searchParams: any }) {
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
           disabled={!isConnected}
-          onClick={createPaymentLink}
+          onClick={() => createPaymentLink('eip681')}
         >
-          Accept Tip
+          Accept Tip EIP681
+        </button>
+        <button
+          className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
+          disabled={!isConnected}
+          onClick={() => createPaymentLink('eip712')}
+        >
+          Accept Tip EIP712
         </button>
         <button
           className="mb-4 p-2 bg-blue-500 text-white rounded-md w-full"
