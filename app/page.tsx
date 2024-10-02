@@ -60,6 +60,10 @@ export default function Home({ searchParams }: { searchParams: any }) {
     if (lastUpdate?.txHash) {
       setTxHash(lastUpdate.txHash);
       toast("Transaction submitted!", { type: 'success' });
+      const canVibrate = 'vibrate' in navigator || 'mozVibrate' in navigator;
+      if (canVibrate) {
+        navigator.vibrate([100, 30, 100, 30, 100]);
+      }
     }
   }, [dbUpdates]);
   console.log({ txHash, dbUpdates });
