@@ -46,16 +46,25 @@ export default function Home({ searchParams }: { searchParams: any }) {
             <input 
               type="text" 
               placeholder="ENS or address" 
+              value={address}
               className="input input-bordered input-lg w-full max-w-xs" 
               onChange={handleAddressChange} 
             />
-            {address.length > 0 && resolvedAddress && (
               <div className="label">
+                {(address.length > 0 && resolvedAddress) ? (
+                  <span className="label-text-alt">
+                    {shortenAddress(resolvedAddress)}
+                  </span>
+                ) : <span className="label-text-alt"></span>}
                 <span className="label-text-alt">
-                  {shortenAddress(resolvedAddress)}
+                  <button
+                    className="btn btn-xs"
+                    onClick={() => setAddress(account || '')}
+                  >
+                    My Address
+                  </button>
                 </span>
               </div>
-            )}
           </label>
           <label className="form-control w-full max-w-xs">
             <div className="label">
