@@ -96,7 +96,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
   
     throw new Error(`Transaction receipt not found after ${maxAttempts} attempts`);
   }
-  console.log({ txHash, dbUpdates });
 
   const generateQrCode = async () => {
     if (!resolvedAddress) {
