@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
 import Footer from './component/footer';
@@ -14,6 +14,7 @@ import { useWallet } from './hooks/useWallet';
 import { useRouter } from 'next/navigation';
 import { type PaymentMethod } from '@/app/types/payments';
 import { generateEip712Payload } from '@/app/utils';
+import useRealtimeDb from './hooks/useRealtimeDb';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const router = useRouter();
@@ -45,6 +46,21 @@ export default function Home({ searchParams }: { searchParams: any }) {
     const newUrl = `${window.location.pathname}?${queryParams.toString()}`;
     window.history.replaceState(null, '', newUrl);
   }, [address, tipAmounts, percentageTips, percentageMode, tippingEnabled]);
+
+  const [uuid, setUuid] = useState<string>();
+  const [txHash, setTxHash] = useState<string>();
+  const dbUpdates = useRealtimeDb({
+    event: 'UPDATE',
+    channel: 'ContactlessPaymentTxOrMsg',
+    table: 'ContactlessPaymentTxOrMsg',
+    filter: `uuid=eq.${uuid}`,
+  });
+  useEffect(() => {
+    const lastUpdate = dbUpdates[dbUpdates.length - 1];
+    setTxHash(lastUpdate?.txHash);
+    toast("Transaction submitted!", { type: 'success' });
+  }, [dbUpdates]);
+  console.log({ txHash, dbUpdates });
 
   const generateQrCode = async () => {
     if (!resolvedAddress) {
@@ -113,6 +129,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
     if (txType === 'eip681') {
       router.push(`/tip/${resolvedAddress}?baseAmount=${amount}&uuid=${uuid}`);
     } else {
+      setUuid(uuid);
       window.ethereum.request({
         method: 'requestContactlessPayment',
         params: [{
@@ -201,7 +218,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
         )}
       </div>
       <Footer />
-      <ToastContainer />
     </main>
   );
 }
