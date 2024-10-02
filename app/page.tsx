@@ -223,7 +223,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           </Link>
         </div>
       </div>
-      <div className="relative flex flex-col items-center p-6 bg-white dark:bg-gray-800 shadow-md rounded-md w-full max-w-md">
+      {/* <div className="relative flex flex-col items-center p-6 bg-white dark:bg-gray-800 shadow-md rounded-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-4">Request Payment</h1>
         <p className="text-sm text-gray-500 mb-4 text-center">
           Enter the recipient address and the amount to <br />generate a QR code to get paid in USDC on base.<br />
@@ -298,7 +298,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           <QRCodeFooter qrCodeData={qrCodeData} qrCodeUrl={qrCodeUrl} />
         )}
       </div>
-      <Footer />
+      <Footer /> */}
     </main>
   );
 }

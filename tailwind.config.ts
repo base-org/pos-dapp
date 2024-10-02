@@ -17,7 +17,7 @@ const config: Config = {
     },
   },
   daisyui: {
-    themes: ["corporate"],
+    themes: ["cupcake"],
   },
   plugins: [daisyui],
 };
