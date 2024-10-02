@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
 import Footer from './component/footer';
@@ -14,6 +14,8 @@ import { useWallet } from './hooks/useWallet';
 import { useRouter } from 'next/navigation';
 import { type PaymentMethod } from '@/app/types/payments';
 import { generateEip712Payload } from '@/app/utils';
+import useRealtimeDb from './hooks/useRealtimeDb';
+import { ethers } from 'ethers';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const router = useRouter();
@@ -45,6 +47,55 @@ export default function Home({ searchParams }: { searchParams: any }) {
     const newUrl = `${window.location.pathname}?${queryParams.toString()}`;
     window.history.replaceState(null, '', newUrl);
   }, [address, tipAmounts, percentageTips, percentageMode, tippingEnabled]);
+
+  const [uuid, setUuid] = useState<string>();
+  const [txHash, setTxHash] = useState<string>();
+  const dbUpdates = useRealtimeDb({
+    event: 'UPDATE',
+    channel: 'ContactlessPaymentTxOrMsg',
+    table: 'ContactlessPaymentTxOrMsg',
+    filter: `uuid=eq.${uuid}`,
+  });
+  useEffect(() => {
+    const lastUpdate = dbUpdates[dbUpdates.length - 1];
+    if (lastUpdate?.txHash) {
+      setTxHash(lastUpdate.txHash);
+      toast("Transaction submitted!", { type: 'success' });
+      const canVibrate = 'vibrate' in navigator || 'mozVibrate' in navigator;
+      if (canVibrate) {
+        navigator.vibrate([100, 30, 100, 30, 100]);
+      }
+      getTransactionReceipt(lastUpdate.txHash);
+    }
+  }, [dbUpdates]);
+
+  async function getTransactionReceipt(txHash: string, maxAttempts = 20, intervalMs = 2000) {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+  
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const receipt = await provider.getTransactionReceipt(txHash);
+        
+        if (receipt) {
+          toast.dismiss();
+          toast("Transaction confirmed!", { type: 'success' });
+          const canVibrate = 'vibrate' in navigator || 'mozVibrate' in navigator;
+          if (canVibrate) {
+            navigator.vibrate([100, 30, 100, 30, 100]);
+          }
+          return receipt;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      } catch (error) {
+        console.error(`Error on attempt ${attempt}:`, error);
+        // If it's the last attempt, throw the error
+        if (attempt === maxAttempts) throw error;
+      }
+    }
+  
+    throw new Error(`Transaction receipt not found after ${maxAttempts} attempts`);
+  }
 
   const generateQrCode = async () => {
     if (!resolvedAddress) {
@@ -113,6 +164,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
     if (txType === 'eip681') {
       router.push(`/tip/${resolvedAddress}?baseAmount=${amount}&uuid=${uuid}`);
     } else {
+      setUuid(uuid);
       window.ethereum.request({
         method: 'requestContactlessPayment',
         params: [{
@@ -201,7 +253,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
         )}
       </div>
       <Footer />
-      <ToastContainer />
     </main>
   );
 }
