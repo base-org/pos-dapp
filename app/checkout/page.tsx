@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEnsResolver } from '../hooks/useEnsResolver';
 import { toast } from 'react-toastify';
@@ -17,20 +17,18 @@ import shortenAddress from '../helpers/shortenAddress';
 import { generateEip712Payload } from '../utils';
 import { PaymentMethod } from '../types/payments';
 import getTransactionReceipt from '../helpers/getTransactionReceipt';
+import { isAddress } from 'ethers';
+import { GradientAvatar } from '../component/gradientAvatar';
 
 export default function Tip() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const walletAddress = searchParams.get('address');
-  console.log({ walletAddress });
-  const [address, setAddress] = useState(walletAddress || '');
+  const address = searchParams.get('address') as string;
   const [resolvedAddress, setResolvedAddress] = useState('');
   const [resolvedEnsName, setResolvedEnsName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [message, setMessage] = useState('');
   const [tipAmount, setTipAmount] = useState(0);
-  const [copyText, setCopyText] = useState('Copy this URL');
   const [isCustomTip, setIsCustomTip] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uuid, setUuid] = useState('');
@@ -187,15 +185,17 @@ export default function Tip() {
           Back
         </Link>
         <div className="flex items-center mb-4">
-          {avatarUrl && (
+          {avatarUrl ? (
             <img
               src={avatarUrl}
               alt="Avatar"
               className="rounded-full w-12 h-12 mr-3"
             />
+          ) : (
+            <GradientAvatar address={resolvedAddress} className="rounded-full w-12 h-12 mr-3" />
           )}
           <div>
-            <h1 className="text-lg font-bold">{resolvedEnsName}</h1>
+            <h1 className="text-lg font-bold">{isAddress(resolvedEnsName) ? shortenAddress(resolvedEnsName) : resolvedEnsName}</h1>
             {address !== resolvedAddress && <p className="text-sm opacity-50">{shortenAddress(resolvedAddress)}</p>}
           </div>
         </div>
@@ -208,9 +208,14 @@ export default function Tip() {
             Connect Wallet to Load Avatar
           </button>
         )}
-        <div className="mb-4 font-bold text-6xl text-center w-full">
+        <div className={`${tipAmount === 0 ? 'mb-4' : 'mb-2'} font-bold text-6xl text-center w-full`}>
           {totalAmount.toLocaleString([], { style: "currency", currency: "usd" })}
         </div>
+        {tipAmount > 0 && (
+          <div className="text-sm text-center w-full mb-4">
+            {baseAmount.toLocaleString([], { style: "currency", currency: "usd" })} total + {tipAmount.toLocaleString([], { style: "currency", currency: "usd" })} tip
+          </div>
+        )}
         <p className="text-sm text-center w-full mb-2">Add a tip</p>
         <div className={`flex justify-between w-full gap-2 ${isCustomTip ? 'mb-2' : 'mb-4'}`}>
           {fixedTips.map((tip, i) => (
@@ -247,7 +252,7 @@ export default function Tip() {
               type="text" 
               placeholder="" 
               value={tipAmount}
-              className="input input-bordered input-lg w-full" 
+              className="input input-bordered input-lg w-full text-center" 
               onChange={(e) => {
                 const { value } = e.target;
                 setTipAmount(isNaN(Number(value)) ? 0 : Number(value));

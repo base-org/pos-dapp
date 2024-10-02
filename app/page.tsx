@@ -8,7 +8,7 @@ import Link from 'next/link';
 import shortenAddress from './helpers/shortenAddress';
 
 export default function Home({ searchParams }: { searchParams: any }) {
-  const { provider, account } = useWallet();
+  const { provider, account, connectWallet } = useWallet();
   const [address, setAddress] = useState(searchParams.address || account || '');
   const [amount, setAmount] = useState('');
 
@@ -24,6 +24,14 @@ export default function Home({ searchParams }: { searchParams: any }) {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-24 bg-base-200">
+      {!account && (
+        <button
+          className="btn btn-secondary"
+          onClick={connectWallet}
+        >
+          Connect Wallet
+        </button>
+      )}
       <div className="card bg-base-100 shadow-xl p-8">
         <div className="card-title mb-0">Check out</div>
         <div className="card-body p-4">
