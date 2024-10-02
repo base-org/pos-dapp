@@ -7,11 +7,15 @@ import { copyToClipboard } from '../util';
 interface QRCodeFooterProps {
   qrCodeData: string;
   qrCodeUrl: string;
+  hideFooter?: boolean;
+  hideHeader?: boolean;
 }
 
 export default function QRCodeFooter({
   qrCodeData,
   qrCodeUrl,
+  hideFooter,
+  hideHeader,
 }: QRCodeFooterProps) {
   const canvasRef = useRef(null);
 
@@ -35,23 +39,27 @@ export default function QRCodeFooter({
   };
   return (
     <div className="mt-4 text-center">
-      <h2 className="text-lg font-semibold mb-2">QR Code:</h2>
+      {!hideHeader && (
+        <h2 className="text-lg font-semibold mb-2">QR Code:</h2>
+      )}
       <img src={qrCodeData} alt="EIP-681 QR Code" className="border border-gray-300 rounded-md mb-2 mx-auto" />
       <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
-      <div className="flex space-x-2 justify-center">
-        <button
-          className="p-2 bg-green-500 text-white rounded-md"
-          onClick={() => copyToClipboard(qrCodeUrl, toast)}
-        >
-          Copy QR Code URL
-        </button>
-        <button
-          className="p-2 bg-green-500 text-white rounded-md"
-          onClick={copyQrCodeImage}
-        >
-          Copy QR Code Image
-        </button>
-      </div>
+      {!hideFooter && (
+        <div className="flex space-x-2 justify-center">
+          <button
+            className="p-2 bg-green-500 text-white rounded-md"
+            onClick={() => copyToClipboard(qrCodeUrl, toast)}
+          >
+            Copy QR Code URL
+          </button>
+          <button
+            className="p-2 bg-green-500 text-white rounded-md"
+            onClick={copyQrCodeImage}
+          >
+            Copy QR Code Image
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -2154,6 +2154,11 @@ hmac-drbg@^1.0.1:
     minimalistic-assert "^1.0.0"
     minimalistic-crypto-utils "^1.0.1"
 
+hugeicons-react@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/hugeicons-react/-/hugeicons-react-0.3.0.tgz#a788db21b116f16062b75ccf3a3633575722ec9f"
+  integrity sha512-znmC+uX7xVqcIs0q09LvwEvJkjX0U3xgT05BSiRV19farS4lPONOKjYT0JkcQG5cvfV0rXHSEAEVNjbHAu81rg==
+
 ignore@^5.2.0:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/ignore/-/ignore-5.3.2.tgz#3cd40e729f3643fd87cb04e50bf0eb722bc596f5"
