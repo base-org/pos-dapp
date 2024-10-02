@@ -57,8 +57,10 @@ export default function Home({ searchParams }: { searchParams: any }) {
   });
   useEffect(() => {
     const lastUpdate = dbUpdates[dbUpdates.length - 1];
-    setTxHash(lastUpdate?.txHash);
-    toast("Transaction submitted!", { type: 'success' });
+    if (lastUpdate?.txHash) {
+      setTxHash(lastUpdate.txHash);
+      toast("Transaction submitted!", { type: 'success' });
+    }
   }, [dbUpdates]);
   console.log({ txHash, dbUpdates });
 
