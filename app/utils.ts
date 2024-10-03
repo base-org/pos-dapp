@@ -22,8 +22,8 @@ export function generateContractCallPayload({ to, amount }: { to: string; amount
 export function generateEip712Payload({ to, amount }: { to: string; amount: string }) {
   const nonceParams = generateNonceParams();
   const eip712Payload = generatePayload(to, parseUnits(amount, USDC_DECIMALS).toString());
-  eip712Payload.rpcProxySubmissionParams.message.message.nonce = nonceParams.nonce;
-  eip712Payload.rpcProxySubmissionParams.message.message.validBefore = String(nonceParams.validBefore);
+  eip712Payload.rpcProxySubmissionParams.typedData.message.nonce = nonceParams.nonce;
+  eip712Payload.rpcProxySubmissionParams.typedData.message.validBefore = String(nonceParams.validBefore);
   
   return eip712Payload;
 }
@@ -47,7 +47,7 @@ export function generateNonceParams() {
 
 function generatePayload(to: string, value: string) {
   const payload = JSON.parse(JSON.stringify(EXAMPLE_EIP_712_PAYLOAD));
-  payload.rpcProxySubmissionParams.message.message.to = to;
-  payload.rpcProxySubmissionParams.message.message.value = value;
+  payload.rpcProxySubmissionParams.typedData.message.to = to;
+  payload.rpcProxySubmissionParams.typedData.message.value = value;
   return payload;
 }
