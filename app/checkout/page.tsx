@@ -160,7 +160,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
         
         if (receipt) {
           toast.dismiss();
-          toast("Transaction confirmed!", { type: 'success' });
+          toast("Transaction confirmed!", { type: 'success', icon: <CheckmarkCircle02Icon className="w-6 h-6" /> });
           setTransactionConfirmed(true);
           const canVibrate = 'vibrate' in navigator || 'mozVibrate' in navigator;
           if (canVibrate) {
