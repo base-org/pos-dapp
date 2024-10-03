@@ -29,7 +29,6 @@ export default function Checkout() {
   const [resolvedEnsName, setResolvedEnsName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [tipAmount, setTipAmount] = useState(0);
-  const [isCustomTip, setIsCustomTip] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uuid, setUuid] = useState('');
   const [transactionSubmitted, setTransactionSubmitted] = useState(false);
@@ -58,9 +57,6 @@ export default function Checkout() {
   }, [dbUpdates]);
 
   const baseAmount = parseFloat(searchParams.get('baseAmount') || '0');
-  const totalAmount = useMemo(() => {
-    return baseAmount + tipAmount;
-  }, [baseAmount, tipAmount]);
 
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState('');
@@ -98,7 +94,7 @@ export default function Checkout() {
     const body = txType === 'eip681' ? {
       payloadType: 'eip681',
       toAddress: resolvedAddress,
-      value: totalAmount,
+      value: baseAmount,
       chainId: BASE_CHAIN_ID.toString(),
       contractAddress: USDC_ADDRESS,
     } : generateEip712Payload();
@@ -126,7 +122,7 @@ export default function Checkout() {
   }
 
   const handleTransaction = async ({ useQrCode }: { useQrCode: boolean }) => {
-    console.log(`Transaction of ${totalAmount} USDC to ${OxAddress} ${resolvedAddress}`);
+    console.log(`Transaction of ${baseAmount} USDC to ${OxAddress} ${resolvedAddress}`);
     if (!OxAddress) {
       toast.error('Invalid address');
       return;
@@ -135,7 +131,7 @@ export default function Checkout() {
     setIsLoading(true);
     setTimeout(async function () {
       if (useQrCode) {
-        const eip681Uri = GeneratePaymentLink(totalAmount, resolvedAddress);
+        const eip681Uri = GeneratePaymentLink(baseAmount, resolvedAddress);
         setShowQRCode(true);
         setQrCodeUrl(eip681Uri);
         const url = await QRCode.toDataURL(eip681Uri);
@@ -186,8 +182,8 @@ export default function Checkout() {
           <ArrowLeft02Icon />
           Back
         </Link>
-        <div className={`${tipAmount === 0 ? 'mb-4' : 'mb-2'} font-bold text-6xl text-center w-full`}>
-          {totalAmount.toLocaleString([], { style: "currency", currency: "usd" })}
+        <div className={`mb-2 font-bold text-6xl text-center w-full`}>
+          {baseAmount.toLocaleString([], { style: "currency", currency: "usd" })}
         </div>
         <div className="flex items-center w-full justify-center mb-4">
           {avatarUrl ? (
@@ -271,6 +267,11 @@ export default function Checkout() {
               View on Basescan
             </a>
           </div>
+        )}
+        {transactionConfirmed && (
+          <Link href={`/tip?address`} className="btn btn-lg btn-primary btn-block">
+            Add Tip
+          </Link>
         )}
       </div>
     </main>

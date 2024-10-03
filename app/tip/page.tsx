@@ -12,7 +12,7 @@ import QRCodeFooter from '@/app/component/qrCode';
 
 import useRealtimeDb from '@/app/hooks/useRealtimeDb';
 import Link from 'next/link';
-import { ArrowLeft02Icon, SmartphoneWifiIcon } from 'hugeicons-react';
+import { ArrowLeft02Icon, CheckmarkCircle02Icon, Loading02Icon, QrCodeIcon, SmartphoneWifiIcon } from 'hugeicons-react';
 import shortenAddress from '../helpers/shortenAddress';
 import { generateEip712Payload } from '../utils';
 import { PaymentMethod } from '../types/payments';
@@ -31,6 +31,8 @@ export default function Tip() {
   const [isCustomTip, setIsCustomTip] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uuid, setUuid] = useState('');
+  const [transactionSubmitted, setTransactionSubmitted] = useState(false);
+  const [transactionConfirmed, setTransactionConfirmed] = useState(false);
   
   const [txHash, setTxHash] = useState<string>();
   const dbUpdates = useRealtimeDb({
@@ -168,13 +170,6 @@ export default function Tip() {
     }, 1000);
   };
 
-  useEffect(() => {
-    if (!OxAddress) {
-      return;
-    }
-    handleTransaction({useQrCode: true });
-  }, [tipAmount, OxAddress]);
-
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-cover bg-center">
       <div className="absolute inset-0 bg-black opacity-50"></div>
@@ -183,7 +178,10 @@ export default function Tip() {
           <ArrowLeft02Icon />
           Back
         </Link>
-        <div className="flex items-center mb-4">
+        <div className={`mb-2 font-bold text-6xl text-center w-full`}>
+          Add tip
+        </div>
+        <div className="flex items-center w-full justify-center mb-4">
           {avatarUrl ? (
             <img
               src={avatarUrl}
@@ -207,20 +205,11 @@ export default function Tip() {
             Connect Wallet to Load Avatar
           </button>
         )}
-        <div className={`${tipAmount === 0 ? 'mb-4' : 'mb-2'} font-bold text-6xl text-center w-full`}>
-          {totalAmount.toLocaleString([], { style: "currency", currency: "usd" })}
-        </div>
-        {tipAmount > 0 && (
-          <div className="text-sm text-center w-full mb-4">
-            {baseAmount.toLocaleString([], { style: "currency", currency: "usd" })} total + {tipAmount.toLocaleString([], { style: "currency", currency: "usd" })} tip
-          </div>
-        )}
-        <p className="text-sm text-center w-full mb-2">Add a tip</p>
-        <div className={`flex justify-between w-full gap-2 ${isCustomTip ? 'mb-2' : 'mb-4'}`}>
+        <div className={`grid grid-cols-2 place-content-center w-full gap-6 ${isCustomTip ? 'mb-2' : 'mb-4'}`}>
           {fixedTips.map((tip, i) => (
             <button
               key={tip}
-              className={`btn w-1/5 ${isSelectedFixedTip(i) ? "btn-primary" : ""}`}
+              className={`btn w-full ${isSelectedFixedTip(i) ? "btn-primary" : ""}`}
               onClick={() => handleTipClick(tip)}
             >
               {tip.toLocaleString([], {
@@ -231,7 +220,7 @@ export default function Tip() {
             </button>
           ))}
           <button
-            className={`btn w-1/5 ${isCustomTip ? "btn-primary" : ""}`}
+            className={`btn w-full ${isCustomTip ? "btn-primary" : ""}`}
             onClick={() => {
               if (!isCustomTip) {
                 setTipAmount(0);
@@ -259,6 +248,38 @@ export default function Tip() {
             />
           </label>
         )}
+        {!transactionSubmitted && (
+          <div className="flex flex-col items-center w-full gap-2 mt-4">
+            <button
+              onClick={() => handleTransaction({ useQrCode: false })}
+              className="mb-4 btn btn-primary btn-block btn-lg"
+              disabled={isLoading}
+            >
+              <SmartphoneWifiIcon className="w-10 h-10" />
+              Tap to Tip
+            </button>
+            <button
+              onClick={() => handleTransaction({ useQrCode: true })}
+              className="mb-4 btn btn-secondary btn-block btn-lg"
+              disabled={isLoading}
+            >
+              <QrCodeIcon className="w-10 h-10" />
+              Scan to Tip
+            </button>
+          </div>
+        )}
+        {transactionSubmitted && !transactionConfirmed && (
+          <div className="flex flex-col w-full gap-4">
+            <div className="font-bold text-xl w-full flex justify-center">Transaction Processing...</div>
+            <Loading02Icon className="w-24 h-24 mx-auto animate-spin" />
+          </div>
+        )}
+        {transactionConfirmed && (
+          <div className="flex flex-col w-full gap-4">
+            <div className="font-bold text-xl w-full flex justify-center">Transaction Confirmed!</div>
+            <CheckmarkCircle02Icon className="w-24 h-24 mx-auto text-success" />
+          </div>
+        )}
         {showQRCode && !isLoading && (
           <div className="w-full mx-auto mb-8">
             <QRCodeFooter
@@ -267,8 +288,6 @@ export default function Tip() {
               hideFooter
               hideHeader
             />
-            <SmartphoneWifiIcon className="w-10 h-10 mx-auto" />
-            <div className="text-center font-bold">Scan or tap to pay</div>
           </div>
         )}
         {isLoading && (
