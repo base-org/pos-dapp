@@ -1,10 +1,27 @@
-import { USDC_DECIMALS } from './constants/index';
+import { USDC_ADDRESS, USDC_DECIMALS } from './constants';
+import { EXAMPLE_CONTRACT_CALL_PAYLOAD } from './constants/contractCall';
 import { EXAMPLE_EIP_712_PAYLOAD } from './constants/eip712';
-import { parseUnits } from 'ethers';
+import { ethers, parseUnits } from 'ethers';
 
-export function generateEip712Payload({ to, value }: { to: string; value: string }) {
+export function generateContractCallPayload({ to, amount }: { to: string; amount: string }) {
+  const abi = [
+    "function transfer(address to, uint256 value)"
+  ];
+  const iface = new ethers.Interface(abi);
+  const data = iface.encodeFunctionData("transfer", [
+    to,
+    parseUnits(amount, USDC_DECIMALS).toString()
+  ]);
+  const contractCallPayload = JSON.parse(JSON.stringify(EXAMPLE_CONTRACT_CALL_PAYLOAD));
+  contractCallPayload.paymentTx.to = USDC_ADDRESS;
+  contractCallPayload.paymentTx.data = data;
+  
+  return contractCallPayload;
+}
+
+export function generateEip712Payload({ to, amount }: { to: string; amount: string }) {
   const nonceParams = generateNonceParams();
-  const eip712Payload = generatePayload(to, parseUnits(value, USDC_DECIMALS).toString());
+  const eip712Payload = generatePayload(to, parseUnits(amount, USDC_DECIMALS).toString());
   eip712Payload.rpcProxySubmissionParams.typedData.message.nonce = nonceParams.nonce;
   eip712Payload.rpcProxySubmissionParams.typedData.message.validBefore = String(nonceParams.validBefore);
   
@@ -32,6 +49,5 @@ function generatePayload(to: string, value: string) {
   const payload = JSON.parse(JSON.stringify(EXAMPLE_EIP_712_PAYLOAD));
   payload.rpcProxySubmissionParams.typedData.message.to = to;
   payload.rpcProxySubmissionParams.typedData.message.value = value;
-  console.log({ payload });
   return payload;
 }

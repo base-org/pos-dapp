@@ -67,7 +67,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
           {isAddress(connectedEnsResolvedAddress) ? shortenAddress(connectedEnsResolvedAddress) : connectedEnsResolvedAddress}
         </button>
       )}
-      <div className="card bg-base-100 shadow-xl p-8">
+      <div className="card bg-base-100 shadow-xl p-8 mt-4">
         <div className="card-title mb-0">Check out</div>
         <div className="card-body p-4">
           <div className="prose max-w-xs text-xs">
