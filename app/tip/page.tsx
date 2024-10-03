@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEnsResolver } from '../hooks/useEnsResolver';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -19,11 +19,10 @@ import { PaymentMethod } from '../types/payments';
 import { ethers, isAddress } from 'ethers';
 import { GradientAvatar } from '../component/gradientAvatar';
 
-export default function Tip() {
+export default function Tip({ searchParams }: { searchParams: any }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const address = searchParams.get('address') as string;
+  const address = searchParams.address as string;
   const [resolvedAddress, setResolvedAddress] = useState('');
   const [resolvedEnsName, setResolvedEnsName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -55,7 +54,7 @@ export default function Tip() {
     }
   }, [dbUpdates]);
 
-  const baseAmount = parseFloat(searchParams.get('baseAmount') || '0');
+  const baseAmount = parseFloat(searchParams.baseAmount || '0');
   const totalAmount = useMemo(() => {
     return baseAmount + tipAmount;
   }, [baseAmount, tipAmount]);

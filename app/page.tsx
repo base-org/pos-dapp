@@ -24,7 +24,6 @@ export default function Home({ searchParams }: { searchParams: any }) {
   };
 
   const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl, needsProvider } = useEnsResolver(address, provider);
-  console.log({ address, ensResolvedAddress})
 
   return (
     <main className="flex w-full min-h-screen flex-col items-center justify-between p-4 md:p-24 bg-base-200">
@@ -53,7 +52,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
         </button>
       )}
       <div className="card bg-base-100 shadow-xl p-8">
-        <div className="card-title mb-0">Check out {address}</div>
+        <div className="card-title mb-0">Check out</div>
         <div className="card-body p-4">
           <div className="prose max-w-xs text-xs">
             Enter the recipient address and the amount to

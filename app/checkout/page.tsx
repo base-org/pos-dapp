@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEnsResolver } from '../hooks/useEnsResolver';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -20,11 +20,10 @@ import { ethers, isAddress } from 'ethers';
 import { GradientAvatar } from '../component/gradientAvatar';
 import { USDC_ADDRESS, BASE_CHAIN_ID } from '../constants/index';
 
-export default function Checkout() {
+export default function Checkout({ searchParams }: { searchParams: any }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const address = searchParams.get('address') as string;
+  const address = searchParams.address as string;
   const [resolvedAddress, setResolvedAddress] = useState('');
   const [resolvedEnsName, setResolvedEnsName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -56,7 +55,7 @@ export default function Checkout() {
     }
   }, [dbUpdates]);
 
-  const baseAmount = parseFloat(searchParams.get('baseAmount') || '0');
+  const baseAmount = parseFloat(searchParams.baseAmount || '0');
 
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState('');
