@@ -8,7 +8,7 @@ export default function Tip({ baseAmount, onTipChanged } : Props) {
   const [tipAmount, setTipAmount] = useState(0);
   const [isCustomTip, setIsCustomTip] = useState(false);
 
-  const fixedTipType = baseAmount > 10 ? 'percent' : 'currency';
+  const fixedTipType = baseAmount < 10 || isCustomTip ? 'currency' : 'percent';
   const fixedTips = fixedTipType === 'percent' ? [.1, .15, .2] : [1, 3, 5];
   const isSelectedFixedTip = (i: number) => {
     if (fixedTipType === 'percent') {
