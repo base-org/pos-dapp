@@ -211,7 +211,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
           )}
           <div>
             <h1 className="text-lg font-bold">{isAddress(resolvedEnsName) ? shortenAddress(resolvedEnsName) : resolvedEnsName}</h1>
-            {address !== resolvedAddress && <p className="text-sm opacity-50">{shortenAddress(resolvedAddress)}</p>}
+            {!isAddress(resolvedEnsName) && <p className="text-sm opacity-50">{shortenAddress(resolvedAddress)}</p>}
           </div>
         </div>
         {!isConnected && needsProvider && !avatarUrl && (
