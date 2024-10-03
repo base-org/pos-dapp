@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import 'react-toastify/dist/ReactToastify.css';
 import { useEnsResolver } from './hooks/useEnsResolver';
@@ -23,11 +23,15 @@ export default function Home({ searchParams }: { searchParams: any }) {
     setAmount(e.target.value);
   };
 
-  const goToCheckout = () => {
+  const checkoutUrl = useMemo(() => {
     if (resolvedAddress && amount) {
-      window.location.href = `/checkout?address=${resolvedAddress}&baseAmount=${amount}`;
+      const url = new URL('/checkout', window.location.origin);
+      url.searchParams.set('address', resolvedAddress);
+      url.searchParams.set('baseAmount', amount);
+      return url.toString();
     }
-  }
+    return '';
+  }, [resolvedAddress, amount]);
 
   const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl, needsProvider } = useEnsResolver(address, provider);
 
@@ -102,12 +106,12 @@ export default function Home({ searchParams }: { searchParams: any }) {
               onChange={handleAmountChange}
             />
           </label>
-          <button
-            onClick={goToCheckout}
+          <Link
+            href={checkoutUrl}
             className="btn btn-primary btn-lg mt-4"
           >
             Check out
-          </button>
+          </Link>
         </div>
       </div>
     </main>
