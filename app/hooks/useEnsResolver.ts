@@ -33,6 +33,7 @@ export function useEnsResolver(
 
   useEffect(() => {
     if (address) {
+      setResolvedAddress('');
       const timeoutId = setTimeout(async () => {
         const url = `https://api.wallet.coinbase.com/rpc/v2/getPublicProfileByDomain?userDomain=${address}`;
         try {

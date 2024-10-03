@@ -44,10 +44,23 @@ export function useWallet() {
     }
   };
 
+  const switchWallet = async () => {
+    try {
+      if (provider) {
+        await provider.send('wallet_requestPermissions', [{ eth_accounts: {} }]);
+        setIsConnected(false);
+        setAccount(null);
+      }
+    } catch (error) {
+      console.error('Error switching wallet:', error);
+    }
+  }
+
   return {
     provider,
     isConnected,
     account,
     connectWallet,
+    switchWallet,
   };
 }
