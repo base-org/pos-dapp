@@ -3,7 +3,7 @@ export const EXAMPLE_EIP_712_PAYLOAD = {
   "chainId": "8453",
   "rpcProxySubmissionParams": {
       "submissionUrl": "https://nfc-relayer.vercel.app/api/submitPaymentTx",
-      "message": {
+      "typedData": {
           "types": {
                 "EIP712Domain": [
                   {

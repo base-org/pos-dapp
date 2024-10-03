@@ -14,7 +14,7 @@ import useRealtimeDb from '@/app/hooks/useRealtimeDb';
 import Link from 'next/link';
 import { ArrowLeft02Icon, CheckmarkCircle02Icon, Loading02Icon, QrCodeIcon, SmartphoneWifiIcon } from 'hugeicons-react';
 import shortenAddress from '../helpers/shortenAddress';
-import { generateEip712Payload } from '../utils';
+import { generateContractCallPayload, generateEip712Payload } from '../utils';
 import { PaymentMethod } from '../types/payments';
 import { ethers, isAddress } from 'ethers';
 import { GradientAvatar } from '../component/gradientAvatar';
@@ -31,8 +31,13 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
   const [tipAmount, setTipAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [uuid, setUuid] = useState('');
+  const [awaitingTransaction, setAwaitingTransaction] = useState(false);
   const [transactionSubmitted, setTransactionSubmitted] = useState(false);
   const [transactionConfirmed, setTransactionConfirmed] = useState(false);
+
+  const hideButtons = useMemo(() => {
+    return awaitingTransaction || transactionSubmitted || transactionConfirmed;
+  }, [awaitingTransaction, transactionSubmitted, transactionConfirmed]);
   
   const [txHash, setTxHash] = useState<string>();
   const dbUpdates = useRealtimeDb({
@@ -47,6 +52,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
     if (lastUpdate?.txHash) {
       setTxHash(lastUpdate.txHash);
       toast("Transaction processing...", { icon: <Loading02Icon className="w-6 h-6 animate-spin" /> });
+      setAwaitingTransaction(false);
       setTransactionSubmitted(true);
       const canVibrate = 'vibrate' in navigator || 'mozVibrate' in navigator;
       if (canVibrate) {
@@ -94,16 +100,30 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
   }, [address, ensResolvedAddress, ensAvatarUrl, router]);
 
   const createPaymentLink = async (txType: PaymentMethod) => {
-    const body = txType === 'eip681' ? {
-      payloadType: 'eip681',
-      toAddress: resolvedAddress,
-      value: totalAmount,
-      chainId: BASE_CHAIN_ID.toString(),
-      contractAddress: USDC_ADDRESS,
-    } : generateEip712Payload({
-      to: resolvedAddress,
-      value: totalAmount.toString(),
-    });
+    let body = {};
+
+    switch(txType) {
+      case 'eip681':
+        body = {
+          payloadType: 'eip681',
+          toAddress: resolvedAddress,
+          value: totalAmount,
+          chainId: BASE_CHAIN_ID.toString(),
+          contractAddress: USDC_ADDRESS,
+        }
+        break;
+      case 'contractCall':
+        body = generateContractCallPayload({
+          to: resolvedAddress,
+          amount: totalAmount.toString(),
+        });
+        break;
+      default:
+        body = generateEip712Payload({
+          to: resolvedAddress,
+          amount: totalAmount.toString(),
+        });
+    }
 
     const createUuidRes = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams`, {
       method: 'POST',
@@ -117,6 +137,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
 
     setUuid(uuid);
     if (txType !== 'eip681') {
+      setAwaitingTransaction(true);
       window.ethereum.request({
         method: 'requestContactlessPayment',
         params: [{
@@ -127,7 +148,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
     }
   }
 
-  const handleTransaction = async ({ useQrCode }: { useQrCode: boolean }) => {
+  const handleTransaction = async ({ type }: { type: PaymentMethod }) => {
     console.log(`Transaction of ${totalAmount} USDC to ${OxAddress} ${resolvedAddress}`);
     if (!OxAddress) {
       toast.error('Invalid address');
@@ -136,7 +157,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
 
     setIsLoading(true);
     setTimeout(async function () {
-      if (useQrCode) {
+      if (type === 'eip681') {
         const eip681Uri = GeneratePaymentLink(totalAmount, resolvedAddress);
         setShowQRCode(true);
         setQrCodeUrl(eip681Uri);
@@ -146,7 +167,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
         setIsLoading(false);
         return;
       }
-      createPaymentLink('eip712');
+      createPaymentLink(type);
       setIsLoading(false);
     }, 1000);
   };
@@ -160,7 +181,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
         
         if (receipt) {
           toast.dismiss();
-          toast("Transaction confirmed!", { type: 'success', icon: <CheckmarkCircle02Icon className="w-6 h-6" /> });
+          toast("Transaction confirmed!", { type: 'success', icon: <CheckmarkCircle02Icon className="w-6 h-6 text-success" /> });
           setTransactionConfirmed(true);
           const canVibrate = 'vibrate' in navigator || 'mozVibrate' in navigator;
           if (canVibrate) {
@@ -223,27 +244,43 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
             Connect Wallet to Load Avatar
           </button>
         )}
-        <div className="w-full text-center text-sm mb-2 font-bold">Add a tip</div>
-        <Tip baseAmount={baseAmount} onTipChanged={setTipAmount} />
-        <div className="my-2" /> 
-        {!transactionSubmitted && (
-          <div className="flex flex-col items-center w-full gap-2">
-            <button
-              onClick={() => handleTransaction({ useQrCode: false })}
-              className="mb-4 btn btn-primary btn-block btn-lg"
-              disabled={isLoading}
-            >
-              <SmartphoneWifiIcon className="w-10 h-10" />
-              Tap to Pay
-            </button>
-            <button
-              onClick={() => handleTransaction({ useQrCode: true })}
-              className="mb-4 btn btn-secondary btn-block btn-lg"
-              disabled={isLoading}
-            >
-              <QrCodeIcon className="w-10 h-10" />
-              Scan to Pay
-            </button>
+        {!hideButtons && (
+          <>
+            <div className="w-full text-center text-sm mb-2 font-bold">Add a tip</div>
+            <Tip baseAmount={baseAmount} onTipChanged={setTipAmount} />
+            <div className="my-2" /> 
+            <div className="flex flex-col items-center w-full gap-2">
+              <button
+                onClick={() => handleTransaction({ type: 'eip712' })}
+                className="mb-4 btn btn-primary btn-block btn-lg"
+                disabled={isLoading}
+              >
+                <SmartphoneWifiIcon className="w-10 h-10" />
+                Tap to Pay (EIP-712)
+              </button>
+              <button
+                onClick={() => handleTransaction({ type: 'contractCall' })}
+                className="mb-4 btn btn-accent btn-block btn-lg flex items-center"
+                disabled={isLoading}
+              >
+                <SmartphoneWifiIcon className="w-10 h-10" />
+                Tap to Pay (contract)
+              </button>
+              <button
+                onClick={() => handleTransaction({ type: 'eip681' })}
+                className="mb-4 btn btn-secondary btn-block btn-lg"
+                disabled={isLoading}
+              >
+                <QrCodeIcon className="w-10 h-10" />
+                Scan to Pay
+              </button>
+            </div>
+          </>
+        )}
+        {awaitingTransaction && (
+          <div className="flex flex-col w-full gap-4">
+            <div className="font-bold text-xl w-full flex justify-center">Awaiting Transaction...</div>
+            <Loading02Icon className="w-24 h-24 mx-auto animate-spin" />
           </div>
         )}
         {transactionSubmitted && !transactionConfirmed && (
