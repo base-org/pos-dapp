@@ -23,6 +23,12 @@ export default function Home({ searchParams }: { searchParams: any }) {
     setAmount(e.target.value);
   };
 
+  const goToCheckout = () => {
+    if (resolvedAddress && amount) {
+      window.location.href = `/checkout?address=${resolvedAddress}&baseAmount=${amount}`;
+    }
+  }
+
   const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl, needsProvider } = useEnsResolver(address, provider);
 
   return (
@@ -96,12 +102,12 @@ export default function Home({ searchParams }: { searchParams: any }) {
               onChange={handleAmountChange}
             />
           </label>
-          <Link
-            href={`/checkout?address=${address}&baseAmount=${amount}`}
+          <button
+            onClick={goToCheckout}
             className="btn btn-primary btn-lg mt-4"
           >
             Check out
-          </Link>
+          </button>
         </div>
       </div>
     </main>
