@@ -1,4 +1,4 @@
-import { USDC_DECIMALS } from './constants';
+import { USDC_DECIMALS } from './constants/index';
 import { EXAMPLE_EIP_712_PAYLOAD } from './constants/eip712';
 import { parseUnits } from 'ethers';
 
