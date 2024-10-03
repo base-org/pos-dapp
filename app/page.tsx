@@ -12,6 +12,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const { provider, account, connectWallet, switchWallet } = useWallet();
   const [address, setAddress] = useState(searchParams.address || account || '');
   const [amount, setAmount] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const { resolvedAddress } = useEnsResolver(address, provider);
 
@@ -35,6 +36,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
 
   const goToCheckout = () => {
     if (checkoutUrl) {
+      setIsRedirecting(true);
       window.location.href = checkoutUrl;
     }
   }
@@ -106,7 +108,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
               <span className="label-text">Amount</span>
             </div>
             <input 
-              type="text" 
+              type="number" 
               placeholder="" 
               className="input input-bordered input-lg w-full max-w-xs" 
               onChange={handleAmountChange}
@@ -114,9 +116,12 @@ export default function Home({ searchParams }: { searchParams: any }) {
           </label>
           <button
             onClick={goToCheckout}
-            disabled={!isAddress(resolvedAddress) || !amount}
+            disabled={!isAddress(resolvedAddress) || !amount || isRedirecting}
             className="btn btn-primary btn-lg mt-4"
           >
+            {isRedirecting && (
+              <div className="loading loading-spinner" />
+            )}
             Check out
           </button>
         </div>
