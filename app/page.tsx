@@ -4,9 +4,9 @@ import { useMemo, useState } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 import { useEnsResolver } from './hooks/useEnsResolver';
 import { useWallet } from './hooks/useWallet';
-import Link from 'next/link';
 import shortenAddress from './helpers/shortenAddress';
 import { GradientAvatar } from './component/gradientAvatar';
+import { isAddress } from 'ethers';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const { provider, account, connectWallet, switchWallet } = useWallet();
@@ -33,7 +33,13 @@ export default function Home({ searchParams }: { searchParams: any }) {
     return '';
   }, [resolvedAddress, amount]);
 
-  const { resolvedAddress: ensResolvedAddress, avatarUrl: ensAvatarUrl, needsProvider } = useEnsResolver(address, provider);
+  const goToCheckout = () => {
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl;
+    }
+  }
+
+  const { resolvedAddress: connectedEnsResolvedAddress, avatarUrl: connectedEnsAvatarUrl } = useEnsResolver(account || '', provider);
 
   return (
     <main className="flex w-full min-h-screen flex-col items-center justify-between p-4 md:p-24 bg-base-200">
@@ -49,16 +55,16 @@ export default function Home({ searchParams }: { searchParams: any }) {
           className="btn btn-neutral"
           onClick={switchWallet}
         >
-          {ensAvatarUrl ? (
+          {connectedEnsAvatarUrl ? (
             <img
-              src={ensAvatarUrl}
+              src={connectedEnsAvatarUrl}
               alt="Avatar"
-              className="rounded-full w-12 h-12 mr-3"
+              className="rounded-full w-8 h-8 mr-1"
             />
           ) : (
             <GradientAvatar address={account} className="rounded-full w-8 h-8 mr-1" />
           )}
-          {ensResolvedAddress ? shortenAddress(ensResolvedAddress) : shortenAddress(account)}
+          {isAddress(connectedEnsResolvedAddress) ? shortenAddress(connectedEnsResolvedAddress) : connectedEnsResolvedAddress}
         </button>
       )}
       <div className="card bg-base-100 shadow-xl p-8">
@@ -81,8 +87,8 @@ export default function Home({ searchParams }: { searchParams: any }) {
             />
               <div className="label">
                 {(address.length > 0 && resolvedAddress) ? (
-                  <span className="label-text-alt">
-                    {shortenAddress(resolvedAddress)}
+                  <span className={`label-text-alt ${!isAddress(resolvedAddress) && 'text-error'}`}>
+                    {!isAddress(resolvedAddress) ? 'Invalid address' : shortenAddress(resolvedAddress)}
                   </span>
                 ) : <span className="label-text-alt"></span>}
                 <span className="label-text-alt">
@@ -106,12 +112,13 @@ export default function Home({ searchParams }: { searchParams: any }) {
               onChange={handleAmountChange}
             />
           </label>
-          <Link
-            href={checkoutUrl}
+          <button
+            onClick={goToCheckout}
+            disabled={!isAddress(resolvedAddress) || !amount}
             className="btn btn-primary btn-lg mt-4"
           >
             Check out
-          </Link>
+          </button>
         </div>
       </div>
     </main>

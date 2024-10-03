@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEnsResolver } from '../hooks/useEnsResolver';
 import { toast } from 'react-toastify';
@@ -19,6 +19,7 @@ import { PaymentMethod } from '../types/payments';
 import { ethers, isAddress } from 'ethers';
 import { GradientAvatar } from '../component/gradientAvatar';
 import { USDC_ADDRESS, BASE_CHAIN_ID } from '../constants/index';
+import Tip from '../component/tip';
 
 export default function Checkout({ searchParams }: { searchParams: any }) {
   const pathname = usePathname();
@@ -56,6 +57,9 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
   }, [dbUpdates]);
 
   const baseAmount = parseFloat(searchParams.baseAmount || '0');
+  const totalAmount = useMemo(() => {
+    return baseAmount + tipAmount;
+  }, [baseAmount, tipAmount]);
 
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState('');
@@ -93,10 +97,13 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
     const body = txType === 'eip681' ? {
       payloadType: 'eip681',
       toAddress: resolvedAddress,
-      value: baseAmount,
+      value: totalAmount,
       chainId: BASE_CHAIN_ID.toString(),
       contractAddress: USDC_ADDRESS,
-    } : generateEip712Payload();
+    } : generateEip712Payload({
+      to: resolvedAddress,
+      value: totalAmount.toString(),
+    });
 
     const createUuidRes = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams`, {
       method: 'POST',
@@ -121,7 +128,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
   }
 
   const handleTransaction = async ({ useQrCode }: { useQrCode: boolean }) => {
-    console.log(`Transaction of ${baseAmount} USDC to ${OxAddress} ${resolvedAddress}`);
+    console.log(`Transaction of ${totalAmount} USDC to ${OxAddress} ${resolvedAddress}`);
     if (!OxAddress) {
       toast.error('Invalid address');
       return;
@@ -130,7 +137,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
     setIsLoading(true);
     setTimeout(async function () {
       if (useQrCode) {
-        const eip681Uri = GeneratePaymentLink(baseAmount, resolvedAddress);
+        const eip681Uri = GeneratePaymentLink(totalAmount, resolvedAddress);
         setShowQRCode(true);
         setQrCodeUrl(eip681Uri);
         const url = await QRCode.toDataURL(eip681Uri);
@@ -153,7 +160,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
         
         if (receipt) {
           toast.dismiss();
-          toast("Transaction confirmed!", { type: 'success' });
+          toast("Transaction confirmed!", { type: 'success', icon: <CheckmarkCircle02Icon className="w-6 h-6" /> });
           setTransactionConfirmed(true);
           const canVibrate = 'vibrate' in navigator || 'mozVibrate' in navigator;
           if (canVibrate) {
@@ -181,9 +188,17 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
           <ArrowLeft02Icon />
           Back
         </Link>
-        <div className={`mb-2 font-bold text-6xl text-center w-full`}>
-          {baseAmount.toLocaleString([], { style: "currency", currency: "usd" })}
+        <div className={`${tipAmount === 0 ? 'mb-4' : 'mb-2'} font-bold text-6xl text-center w-full`}>
+          {totalAmount.toLocaleString([], { style: "currency", currency: "usd" })}
         </div>
+        {tipAmount > 0 && (
+          <div className="mb-4 text-center w-full">
+            <span className="text-sm">
+              {baseAmount.toLocaleString([], { style: "currency", currency: "usd" })}&nbsp;+&nbsp;
+              {tipAmount.toLocaleString([], { style: "currency", currency: "usd" })} tip
+            </span>
+          </div>
+        )}
         <div className="flex items-center w-full justify-center mb-4">
           {avatarUrl ? (
             <img
@@ -196,7 +211,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
           )}
           <div>
             <h1 className="text-lg font-bold">{isAddress(resolvedEnsName) ? shortenAddress(resolvedEnsName) : resolvedEnsName}</h1>
-            {address !== resolvedAddress && <p className="text-sm opacity-50">{shortenAddress(resolvedAddress)}</p>}
+            {!isAddress(resolvedEnsName) && <p className="text-sm opacity-50">{shortenAddress(resolvedAddress)}</p>}
           </div>
         </div>
         {!isConnected && needsProvider && !avatarUrl && (
@@ -208,6 +223,9 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
             Connect Wallet to Load Avatar
           </button>
         )}
+        <div className="w-full text-center text-sm mb-2 font-bold">Add a tip</div>
+        <Tip baseAmount={baseAmount} onTipChanged={setTipAmount} />
+        <div className="my-2" /> 
         {!transactionSubmitted && (
           <div className="flex flex-col items-center w-full gap-2">
             <button
@@ -266,11 +284,6 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
               View on Basescan
             </a>
           </div>
-        )}
-        {transactionConfirmed && (
-          <Link href={`/tip?address`} className="btn btn-lg btn-primary btn-block">
-            Add Tip
-          </Link>
         )}
       </div>
     </main>
