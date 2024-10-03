@@ -1,8 +1,10 @@
-import { EXAMPLE_EIP_712_PAYLOAD } from "./constants";
+import { USDC_DECIMALS } from './constants';
+import { EXAMPLE_EIP_712_PAYLOAD } from './constants/eip712';
+import { parseUnits } from 'ethers';
 
-export function generateEip712Payload() {
+export function generateEip712Payload({ to, value }: { to: string; value: string }) {
   const nonceParams = generateNonceParams();
-  const eip712Payload = { ...EXAMPLE_EIP_712_PAYLOAD };
+  const eip712Payload = generatePayload(to, parseUnits(value, USDC_DECIMALS).toString());
   eip712Payload.rpcProxySubmissionParams.message.message.nonce = nonceParams.nonce;
   eip712Payload.rpcProxySubmissionParams.message.message.validBefore = String(nonceParams.validBefore);
   
@@ -24,4 +26,12 @@ export function generateNonceParams() {
     validAfter: 0,
     validBefore: validBeforeAsEpoch,
   };
+}
+
+function generatePayload(to: string, value: string) {
+  const payload = JSON.parse(JSON.stringify(EXAMPLE_EIP_712_PAYLOAD));
+  payload.rpcProxySubmissionParams.message.message.to = to;
+  payload.rpcProxySubmissionParams.message.message.value = value;
+  console.log({ payload });
+  return payload;
 }
