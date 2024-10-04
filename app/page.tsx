@@ -7,13 +7,15 @@ import { useWallet } from './hooks/useWallet';
 import shortenAddress from './helpers/shortenAddress';
 import { GradientAvatar } from './component/gradientAvatar';
 import { isAddress } from 'ethers';
+import ThemeChanger from './component/themeSwitcher';
+import { useRouter } from 'next/navigation';
 
 export default function Home({ searchParams }: { searchParams: any }) {
   const { provider, account, connectWallet, switchWallet } = useWallet();
   const [address, setAddress] = useState(searchParams.address || account || '');
   const [amount, setAmount] = useState('');
   const [isRedirecting, setIsRedirecting] = useState(false);
-
+  const router = useRouter();
   const { resolvedAddress } = useEnsResolver(address, provider);
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +39,7 @@ export default function Home({ searchParams }: { searchParams: any }) {
   const goToCheckout = () => {
     if (checkoutUrl) {
       setIsRedirecting(true);
-      window.location.href = checkoutUrl;
+      router.push(checkoutUrl);
     }
   }
 
@@ -45,30 +47,33 @@ export default function Home({ searchParams }: { searchParams: any }) {
 
   return (
     <main className="flex w-full min-h-screen flex-col items-center justify-between p-4 md:p-24 bg-base-200">
-      {!account ? (
-        <button
-          className="btn btn-secondary"
-          onClick={connectWallet}
-        >
-          Connect Wallet
-        </button>
-      ) : (
-        <button
-          className="btn btn-neutral"
-          onClick={switchWallet}
-        >
-          {connectedEnsAvatarUrl ? (
-            <img
-              src={connectedEnsAvatarUrl}
-              alt="Avatar"
-              className="rounded-full w-8 h-8 mr-1"
-            />
-          ) : (
-            <GradientAvatar address={account} className="rounded-full w-8 h-8 mr-1" />
-          )}
-          {isAddress(connectedEnsResolvedAddress) ? shortenAddress(connectedEnsResolvedAddress) : connectedEnsResolvedAddress}
-        </button>
-      )}
+      <div className="flex items-center gap-2">
+        {!account ? (
+          <button
+            className="btn btn-secondary"
+            onClick={connectWallet}
+          >
+            Connect Wallet
+          </button>
+        ) : (
+          <button
+            className="btn btn-neutral"
+            onClick={switchWallet}
+          >
+            {connectedEnsAvatarUrl ? (
+              <img
+                src={connectedEnsAvatarUrl}
+                alt="Avatar"
+                className="rounded-full w-8 h-8 mr-1"
+              />
+            ) : (
+              <GradientAvatar address={account} className="rounded-full w-8 h-8 mr-1" />
+            )}
+            {isAddress(connectedEnsResolvedAddress) ? shortenAddress(connectedEnsResolvedAddress) : connectedEnsResolvedAddress}
+          </button>
+        )}
+        <ThemeChanger />
+      </div>
       <div className="card bg-base-100 shadow-xl p-8 mt-4">
         <div className="card-title mb-0">Check out</div>
         <div className="card-body p-4">
