@@ -12,7 +12,7 @@ import QRCodeFooter from '@/app/component/qrCode';
 
 import useRealtimeDb from '@/app/hooks/useRealtimeDb';
 import Link from 'next/link';
-import { ArrowLeft02Icon, CheckmarkCircle02Icon, Loading02Icon, QrCodeIcon, SmartphoneWifiIcon } from 'hugeicons-react';
+import { ArrowLeft02Icon, ArrowReloadHorizontalIcon, CheckmarkCircle02Icon, Loading02Icon, QrCodeIcon, SmartphoneWifiIcon } from 'hugeicons-react';
 import shortenAddress from '../helpers/shortenAddress';
 import { generateContractCallPayload, generateEip712Payload } from '../utils';
 import { PaymentMethod } from '../types/payments';
@@ -34,6 +34,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
   const [awaitingTransaction, setAwaitingTransaction] = useState(false);
   const [transactionSubmitted, setTransactionSubmitted] = useState(false);
   const [transactionConfirmed, setTransactionConfirmed] = useState(false);
+  const [lastTxType, setLastTxType] = useState<PaymentMethod>();
 
   const hideButtons = useMemo(() => {
     return awaitingTransaction || transactionSubmitted || transactionConfirmed;
@@ -156,6 +157,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
     }
 
     setIsLoading(true);
+    setLastTxType(undefined);
     setTimeout(async function () {
       if (type === 'eip681') {
         const eip681Uri = GeneratePaymentLink(totalAmount, resolvedAddress);
@@ -169,6 +171,7 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
       }
       createPaymentLink(type);
       setIsLoading(false);
+      setLastTxType(type);
     }, 1000);
   };
 
@@ -205,10 +208,18 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-cover bg-center">
       <div className="absolute inset-0 bg-black opacity-50"></div>
       <div className="relative z-10 flex flex-col items-start p-6 bg-base-100 shadow-md rounded-md w-full max-w-2xl">
-        <Link href="/" className="btn btn-ghost btn-sm mb-6">
-          <ArrowLeft02Icon />
-          Back
-        </Link>
+        <div className="flex items-center justify-between w-full mb-6">
+          <Link href="/" className="btn btn-ghost btn-sm">
+            <ArrowLeft02Icon />
+            Back
+          </Link>
+          {lastTxType && (
+            <button className="btn btn-outline btn-sm" onClick={() => handleTransaction({ type: lastTxType })}>
+              <ArrowReloadHorizontalIcon className="w-6 h-6" />
+              Request Again
+            </button>
+          )}
+        </div>
         <div className={`${tipAmount === 0 ? 'mb-4' : 'mb-2'} font-bold text-6xl text-center w-full`}>
           {totalAmount.toLocaleString([], { style: "currency", currency: "usd" })}
         </div>
