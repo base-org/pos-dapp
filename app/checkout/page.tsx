@@ -125,19 +125,19 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
         });
     }
 
-    const createUuidRes = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify(body),
-    });
-    const { uuid } = await createUuidRes.json() as { uuid: string };
-
-    setUuid(uuid);
     if (txType !== 'eip681') {
       setAwaitingTransaction(true);
+      const createUuidRes = await fetch(`${process.env.NEXT_PUBLIC_NFC_RELAYER_URL}/api/paymentTxParams`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify(body),
+      });
+      const { uuid } = await createUuidRes.json() as { uuid: string };
+      setUuid(uuid);
+
       window.ethereum.request({
         method: 'requestContactlessPayment',
         params: [{
@@ -145,10 +145,19 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
           uri: `${process.env.NEXT_PUBLIC_NFC_RELAYER_URL as string}/api/paymentTxParams/${uuid}`
         }],
       });
+    } else {
+      const eip681Uri = GeneratePaymentLink(totalAmount, resolvedAddress);
+      window.ethereum.request({
+        method: 'requestContactlessPayment',
+        params: [{
+          type: 1,
+          uri: eip681Uri
+        }],
+      });
     }
   }
 
-  const handleTransaction = async ({ type }: { type: PaymentMethod }) => {
+  const handleTransaction = async ({ type, asQrCode }: { type: PaymentMethod, asQrCode?: boolean }) => {
     console.log(`Transaction of ${totalAmount} USDC to ${OxAddress} ${resolvedAddress}`);
     if (!OxAddress) {
       toast.error('Invalid address');
@@ -157,8 +166,9 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
 
     setIsLoading(true);
     setTimeout(async function () {
-      if (type === 'eip681') {
+      if (type === 'eip681' && asQrCode) {
         const eip681Uri = GeneratePaymentLink(totalAmount, resolvedAddress);
+        console.log({ eip681Uri });
         setShowQRCode(true);
         setQrCodeUrl(eip681Uri);
         const url = await QRCode.toDataURL(eip681Uri);
@@ -250,24 +260,24 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
             <Tip baseAmount={baseAmount} onTipChanged={setTipAmount} />
             <div className="my-2" /> 
             <div className="flex flex-col items-center w-full gap-2">
-              <button
+            <button
                 onClick={() => handleTransaction({ type: 'eip712' })}
                 className="mb-4 btn btn-primary btn-block btn-lg"
                 disabled={isLoading}
               >
                 <SmartphoneWifiIcon className="w-10 h-10" />
-                Tap to Pay (EIP-712)
+                Tap to Pay (EIP-712 relay)
               </button>
               <button
-                onClick={() => handleTransaction({ type: 'contractCall' })}
+                onClick={() => handleTransaction({ type: 'eip681' })}
                 className="mb-4 btn btn-accent btn-block btn-lg flex items-center"
                 disabled={isLoading}
               >
                 <SmartphoneWifiIcon className="w-10 h-10" />
-                Tap to Pay (contract)
+                Tap to Pay (EIP-681)
               </button>
               <button
-                onClick={() => handleTransaction({ type: 'eip681' })}
+                onClick={() => handleTransaction({ type: 'eip681', asQrCode: true })}
                 className="mb-4 btn btn-secondary btn-block btn-lg"
                 disabled={isLoading}
               >
