@@ -146,7 +146,9 @@ export default function Checkout({ searchParams }: { searchParams: any }) {
         }],
       });
     } else {
+      console.log({ totalAmount });
       const eip681Uri = GeneratePaymentLink(totalAmount, resolvedAddress);
+      console.log({ eip681Uri });
       window.ethereum.request({
         method: 'requestContactlessPayment',
         params: [{

@@ -1,7 +1,7 @@
 import { USDC_ADDRESS, BASE_CHAIN_ID } from './constants/index';
 
 export const GeneratePaymentLink = (amount: number, address: string) : string => {
-  return `ethereum:${USDC_ADDRESS}@${BASE_CHAIN_ID}/transfer?value=${amount}e18&address=${address}`;
+  return `ethereum:${USDC_ADDRESS}@${BASE_CHAIN_ID}/transfer?value=${amount}e10&address=${address}`;
 }
 
 export const copyToClipboard = (text: string, toast:any): void => {
