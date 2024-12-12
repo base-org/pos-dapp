@@ -1,7 +1,19 @@
 import { USDC_ADDRESS, BASE_CHAIN_ID } from './constants/index';
 
+export const formatUsdcAmount = (amount: number) => {
+  // Convert to 6 decimal places, remove decimal point
+  const rawAmount = Math.round(amount * 1_000_000);
+  // Convert to scientific notation if it ends in zeros
+  const trailingZeros = (rawAmount.toString().match(/0+$/) || [''])[0].length;
+  if (trailingZeros > 0) {
+    return `${rawAmount/10**trailingZeros}e${trailingZeros}`;
+  }
+  return rawAmount.toString();
+}
+
 export const GeneratePaymentLink = (amount: number, address: string) : string => {
-  return `ethereum:${USDC_ADDRESS}@${BASE_CHAIN_ID}/transfer?value=${amount}e10&address=${address}`;
+  const amountAsUsdc = formatUsdcAmount(amount);
+  return `ethereum:${USDC_ADDRESS}@${BASE_CHAIN_ID}/transfer?value=${amountAsUsdc}&address=${address}`;
 }
 
 export const copyToClipboard = (text: string, toast:any): void => {
